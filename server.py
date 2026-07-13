@@ -774,6 +774,8 @@ def ensure_demo_story():
         ("林嘉怡","27","女","13712345678","linjiayi","广州","天河区珠江新城","1999-04-06","彩宝、耳饰、轻奢款"),
         ("高博文","34","男","13987654321","gaobowen","深圳","南山区科技园","1992-08-19","求婚钻戒、预算明确、重证书"),
     ]
+    # 覆盖今天、本周、本月和更早日期，让仪表盘筛选能直观看到变化。
+    demo_offsets = [0, 0, 0, 1, 2, 3, 4, 5, 6, 6, 9, 12, 15, 18, 22, 28, 29, 45, 20, 90]
     order_templates = [
         ("李婉晴","婚戒","PT950铂金","钻石 1.0克拉 D色 VS1","小钻 12颗","pending_quote",40000,0.15,"小红书私信","求婚","细戒臂、六爪、显钻、不要太高托",[]),
         ("张明轩","戒指","18K白金","祖母绿 1.2克拉","梯钻 2颗","quoting",38000,0.16,"老客户复购","结婚纪念日","复古、低调、有质感，适合日常佩戴",[]),
@@ -806,7 +808,7 @@ def ensure_demo_story():
         for i, order_id in enumerate(order_ids):
             tpl = order_templates[i]
             name, product, metal, main_stone, side_stones, status, budget, rate, source, occasion, brief, items = tpl
-            created_at = (datetime.now() - timedelta(days=45 - i * 2, hours=(i % 5) + 1)).strftime("%Y-%m-%d %H:%M:%S")
+            created_at = (datetime.now() - timedelta(days=demo_offsets[i], hours=(i % 5) + 1)).strftime("%Y-%m-%d %H:%M:%S")
             due_date = (date.today() + timedelta(days=max(5, 28 - i))).isoformat() if status not in ("delivered",) else (date.today() - timedelta(days=2 + i % 6)).isoformat()
             materials = [{"name": main_stone.split()[0], "quantity": 1, "unit": "件"}] if main_stone != "无" else [{"name": metal, "quantity": 1, "unit": "件"}]
             if side_stones and side_stones != "无":
@@ -1485,10 +1487,6 @@ def get_stats(username:str="boss", period:str="month", basis:str="created", tren
             }
         total = db.execute("SELECT COUNT(*) as c FROM orders").fetchone()["c"]
         bs = {r["status"]:r["c"] for r in db.execute(f"SELECT status,COUNT(*) as c FROM orders WHERE {date_field}>=? GROUP BY status",(start,)).fetchall()}
-        # 演示仪表盘的业务节点要展示完整流程，不因当前时间筛选而变成 0。
-        if PUBLIC_DEMO_MODE:
-            bs = {r["status"]:r["c"] for r in db.execute(
-                "SELECT status,COUNT(*) as c FROM orders GROUP BY status").fetchall()}
         mo = db.execute(f"SELECT COUNT(*) as c FROM orders WHERE {date_field}>=?",(start,)).fetchone()["c"]
         mr = db.execute(f"SELECT COALESCE(SUM(final_price),0) as s FROM orders WHERE status IN ('confirmed','in_production','delivered') AND {date_field}>=?",(start,)).fetchone()["s"]
         mp = db.execute(f"SELECT COALESCE(SUM(profit),0) as s FROM orders WHERE status IN ('confirmed','in_production','delivered') AND {date_field}>=?",(start,)).fetchone()["s"]

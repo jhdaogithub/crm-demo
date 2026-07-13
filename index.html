@@ -303,9 +303,9 @@ body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; backg
       <div class="stat-card clickable" @click="drillStatus('pending_quote')"><div class="num">{{stats.pending_quote||0}}</div><div class="label term-label" :title="statusDescription('pending_quote')" @click.stop="showStatusTip('pending_quote')">🔴 待报价</div></div>
       <div class="stat-card clickable" @click="drillStatus('quoted')"><div class="num">{{stats.need_review||0}}</div><div class="label term-label" :title="statusDescription('quoted')" @click.stop="showStatusTip('quoted')">{{user.role==='master'?'🟡 已报价':'🟡 待审核'}}</div></div>
       <div class="stat-card clickable" v-if="user.role==='master'" @click="drillStatus('reviewed')"><div class="num">{{stats.reviewed_quote||0}}</div><div class="label term-label" :title="statusDescription('reviewed')" @click.stop="showStatusTip('reviewed')">🟢 老板已审核</div></div>
-      <div class="stat-card clickable" v-if="user.role==='boss'" @click="drillMetric('profit')"><div class="num">¥{{(stats.month_profit||0).toLocaleString()}}</div><div class="label">{{periodLabel}}利润</div></div>
-      <div class="stat-card clickable" v-if="user.role==='boss'" @click="drillMetric('revenue')"><div class="num">¥{{(stats.month_revenue||0).toLocaleString()}}</div><div class="label">{{periodLabel}}营收</div></div>
-      <div class="stat-card full" v-if="user.role==='boss'">
+      <div class="stat-card clickable" v-if="permissions.dashboard_finance" @click="drillMetric('profit')"><div class="num">¥{{(stats.month_profit||0).toLocaleString()}}</div><div class="label">{{periodLabel}}利润</div></div>
+      <div class="stat-card clickable" v-if="permissions.dashboard_finance" @click="drillMetric('revenue')"><div class="num">¥{{(stats.month_revenue||0).toLocaleString()}}</div><div class="label">{{periodLabel}}营收</div></div>
+      <div class="stat-card full" v-if="permissions.dashboard_finance">
         <div style="display:flex;justify-content:space-between;">
           <div @click="drillStatus('sent_to_client')" style="cursor:pointer;"><div class="label">待收款</div><div style="font-size:18px;font-weight:700;">¥{{(stats.pending_revenue||0).toLocaleString()}}</div></div>
           <div @click="drillPeriod()" style="cursor:pointer;"><div class="label">{{periodLabel}}{{dashboardBasis==='completed'?'完成付款':'新增'}}</div><div style="font-size:18px;font-weight:700;">{{stats.period_orders||0}} 单</div></div>
@@ -314,7 +314,7 @@ body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; backg
       </div>
     </div>
 
-    <div class="chart-section" v-if="user.role==='boss'&&permissions.dashboard_charts">
+    <div class="chart-section" v-if="permissions.dashboard_charts">
       <div class="chart-card">
         <div class="chart-head">
           <div>
