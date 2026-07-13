@@ -302,8 +302,6 @@ def order_dict(row, role_or_fields="boss"):
         for key, value in summary.items():
             if key in allowed:
                 result[key] = value
-    if PUBLIC_DEMO_MODE and "customer_name" in result:
-        result["customer_name"] = f"演示客户 {int(d['id']):02d}"
     return result
 
 def get_user_permissions(role, custom_fields_json="{}"):
@@ -1036,7 +1034,7 @@ async def public_demo_guard(request: Request, call_next):
         return JSONResponse({"detail": "请先登录演示账号"}, status_code=401)
     allowed = (
         path == "/api/auth/verify" or path == "/api/status-flow" or path == "/api/stats"
-        or path == "/api/orders" or re.fullmatch(r"/api/orders/\\d+", path)
+        or path == "/api/orders" or re.fullmatch(r"/api/orders/\d+", path)
         or path == "/api/customers" or path.startswith("/api/customers/") or path == "/api/notifications"
     )
     if method != "GET" or not allowed:
