@@ -34,7 +34,9 @@ if os.environ.get("DATABASE_PATH"):
     DB_PATH = os.environ["DATABASE_PATH"]
 elif os.environ.get("VERCEL"):
     DB_PATH = os.path.join("/tmp", "jewelry-crm-demo.db")
-    if not os.path.exists(DB_PATH):
+    # 公开演示站不保留写入；每个函数实例都从同一份脱敏数据重新初始化，
+    # 避免不同实例各自残留旧的 /tmp 数据库而造成页面时有数据、时而为空。
+    if PUBLIC_DEMO_MODE or not os.path.exists(DB_PATH):
         shutil.copy2(SEED_DB_PATH, DB_PATH)
 else:
     DB_PATH = SEED_DB_PATH
