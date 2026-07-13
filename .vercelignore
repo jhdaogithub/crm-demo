@@ -1,0 +1,3 @@
+# 公开演示部署只使用 jewelry_public_demo.db；不要把原始数据库打包进去。
+jewelry.db
+render.yaml
