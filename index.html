@@ -244,11 +244,6 @@ body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; backg
     <input v-model="loginForm.password" type="password" placeholder="密码" @keyup.enter="login">
     <button class="login-btn" @click="login">登 录</button>
     <div class="login-hint" v-if="loginError" style="color:var(--red);">{{loginError}}</div>
-    <div class="login-hint">
-      演示账号：<br>
-      老板 boss/boss123 | 助理 assist/assist123<br>
-      师傅 master/master123 | 财务 custom/custom123
-    </div>
   </div>
 </div>
 

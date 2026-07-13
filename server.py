@@ -556,13 +556,17 @@ def enrich_order_details(db, d, fields, viewer_username=""):
     return d
 
 # ─── Seed 演示数据 ───
+def demo_password(env_name, local_default):
+    password = os.environ.get(env_name)
+    if os.environ.get("VERCEL") and not password:
+        raise RuntimeError(f"请配置 Vercel 环境变量：{env_name}")
+    return password or local_default
+
 def ensure_default_users(db):
     users = [
-        ("boss","boss123","张老板","boss","{}"),
-        ("assistant","assist123","小助理","assistant","{}"),
-        ("assist","assist123","小助理","assistant","{}"),
-        ("master","master123","老师傅","master","{}"),
-        ("custom","custom123","财务","custom",'{"fields":["id","order_number","customer_name","cost_total","profit","final_price","status","created_at"]}'),
+        ("boss",demo_password("DEMO_BOSS_PASSWORD", "boss123"),"张老板","boss","{}"),
+        ("assistant",demo_password("DEMO_ASSISTANT_PASSWORD", "assist123"),"小助理","assistant","{}"),
+        ("master",demo_password("DEMO_MASTER_PASSWORD", "master123"),"老师傅","master","{}"),
     ]
     for username, password, display_name, role, custom_fields in users:
         db.execute("""INSERT INTO users(username,password_hash,display_name,role,custom_fields,is_active)
@@ -574,6 +578,8 @@ def ensure_default_users(db):
                 custom_fields=excluded.custom_fields,
                 is_active=1""",
             (username, hash_password(password), display_name, role, custom_fields))
+    # 演示站仅保留对外展示的三个角色，停用旧的辅助演示账户。
+    db.execute("UPDATE users SET is_active=0 WHERE username IN ('assist','custom')")
 
 def seed_demo():
     with get_db() as db:
@@ -2009,6 +2015,5 @@ if __name__ == "__main__":
     print(f"💎 珠宝协作 v2.0 → http://localhost:8899")
     print(f"   手机同 Wi‑Fi 访问: http://你的Mac局域网IP:8899")
     print(f"   AI: {'Claude' if AI_CONFIG['api_key'] else '规则引擎（无 API Key）'}")
-    print(f"   演示账号: boss/boss123  assistant/assist123  master/master123")
     # 云端平台会通过 PORT 环境变量指定监听端口；本地仍默认使用 8899。
     uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", "8899")), log_level="warning")
