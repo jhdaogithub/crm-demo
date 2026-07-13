@@ -263,7 +263,7 @@ body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; backg
     <button :class="{active:tab==='orders'}" @click="tab='orders'">📋 订单</button>
     <button v-if="permissions.customers" :class="{active:tab==='customers'}" @click="tab='customers';loadCustomers()">👤 客户</button>
     <button v-if="permissions.settings" :class="{active:tab==='settings'}" @click="tab='settings';loadSettings()">🔧 设置</button>
-    <button :class="{active:tab==='notifications'}" @click="tab='notifications';loadNotifications()">🔔</button>
+    <button v-if="permissions.notifications" :class="{active:tab==='notifications'}" @click="tab='notifications';loadNotifications()">🔔</button>
   </div>
 
   <div class="toast" v-if="toast" @click="toast=''">{{toast}}</div>
@@ -952,7 +952,7 @@ createApp({
     toast:'', statusTip:null, chartTip:null, chartHoverTip:null,
   }},
   computed:{
-    roleName(){const m={boss:'老板',assistant:'助理',master:'师傅',custom:'自定义'};return m[this.user?.role]||this.user?.role;},
+    roleName(){const m={boss:'老板',assistant:'助理',master:'师傅',custom:'自定义',demo_viewer:'演示访客'};return m[this.user?.role]||this.user?.role;},
     permissions(){
       let p={...this.permissionTemplate(this.user?.role||'assistant')};
       try{Object.assign(p, JSON.parse(this.user?.custom_fields||'{}').permissions||{});}catch(e){}
@@ -1032,7 +1032,8 @@ createApp({
         boss:{...all},
         assistant:{...none,ai:true,final_price:true,orders_create:true,orders_edit:true,after_sale:true,notifications:true},
         master:{...none,quote:true,notifications:true},
-        custom:{...none,ai:true,final_price:true,notifications:true}
+        custom:{...none,ai:true,final_price:true,notifications:true},
+        demo_viewer:{...none}
       };
       return templates[role]||templates.assistant;
     },

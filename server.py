@@ -24,11 +24,15 @@ import uvicorn
 
 # ─── 配置 ───
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
-SEED_DB_PATH = os.path.join(APP_DIR, "jewelry.db")
+PUBLIC_DEMO_MODE = os.environ.get("PUBLIC_DEMO_MODE", "").lower() == "true"
+PUBLIC_DEMO_USER = "demo_viewer"
+SEED_DB_PATH = os.path.join(APP_DIR, "jewelry_public_demo.db" if PUBLIC_DEMO_MODE else "jewelry.db")
 
 # Vercel 的部署目录不可作为可持续写入的数据盘。为演示环境把随代码
 # 发布的初始数据库复制到可写的临时空间；函数重启后会回到初始演示数据。
-if os.environ.get("VERCEL"):
+if os.environ.get("DATABASE_PATH"):
+    DB_PATH = os.environ["DATABASE_PATH"]
+elif os.environ.get("VERCEL"):
     DB_PATH = os.path.join("/tmp", "jewelry-crm-demo.db")
     if not os.path.exists(DB_PATH):
         shutil.copy2(SEED_DB_PATH, DB_PATH)
@@ -65,6 +69,7 @@ ROLE_PERMISSIONS = {
     "boss": {"ai": True, "ai_config": True, "dashboard_finance": True, "dashboard_charts": True, "cost": True, "final_price": True, "customers": True, "customer_sensitive": True, "users": True, "settings": True, "orders_create": True, "orders_edit": True, "status": True, "quote": True, "payment": True, "price_edit": True, "after_sale": True, "notifications": True},
     "assistant": {"ai": True, "ai_config": False, "dashboard_finance": False, "dashboard_charts": False, "cost": False, "final_price": True, "customers": False, "customer_sensitive": False, "users": False, "settings": False, "orders_create": True, "orders_edit": True, "status": False, "quote": False, "payment": False, "price_edit": False, "after_sale": True, "notifications": True},
     "master": {"ai": False, "ai_config": False, "dashboard_finance": False, "dashboard_charts": False, "cost": False, "final_price": False, "customers": False, "customer_sensitive": False, "users": False, "settings": False, "orders_create": False, "orders_edit": False, "status": False, "quote": True, "payment": False, "price_edit": False, "after_sale": False, "notifications": True},
+    "demo_viewer": {"ai": False, "ai_config": False, "dashboard_finance": False, "dashboard_charts": False, "cost": False, "final_price": False, "customers": False, "customer_sensitive": False, "users": False, "settings": False, "orders_create": False, "orders_edit": False, "status": False, "quote": False, "payment": False, "price_edit": False, "after_sale": False, "notifications": False},
 }
 
 # ─── 数据库 ───
@@ -227,6 +232,7 @@ ROLE_DEFAULTS = {
     "boss": {"name":"老板","fields":["id","order_number","customer_name","product_type","metal_type","main_stone","side_stones","material_notes","special_notes","budget","ring_size","due_date","customer_source","occasion","design_brief","image_url","follow_up_note","material_specs","deposit_amount","paid_amount","paid_at","payment_note","paid_total","balance_amount","is_paid","payment_status","payment_records","cost_total","profit_mode","profit_rate","profit_fixed","profit","final_price","status","created_by","created_at","updated_at","quote_items","status_history","after_sales","quote_change_requests"]},
     "assistant": {"name":"助理","fields":["id","order_number","customer_name","product_type","metal_type","main_stone","side_stones","material_notes","special_notes","budget","ring_size","due_date","customer_source","occasion","design_brief","image_url","follow_up_note","material_specs","final_price","status","created_at","status_history"]},
     "master": {"name":"师傅","fields":["id","order_number","image_url","material_specs","status","created_at","quote_items","status_history","quote_change_requests"]},
+    "demo_viewer": {"name":"演示访客","fields":["id","order_number","customer_name","product_type","metal_type","main_stone","side_stones","material_notes","special_notes","due_date","customer_source","occasion","design_brief","image_url","follow_up_note","material_specs","status","created_at","updated_at","status_history"]},
 }
 
 # ─── 权限工具 ───
@@ -294,6 +300,8 @@ def order_dict(row, role_or_fields="boss"):
         for key, value in summary.items():
             if key in allowed:
                 result[key] = value
+    if PUBLIC_DEMO_MODE and "customer_name" in result:
+        result["customer_name"] = f"演示客户 {int(d['id']):02d}"
     return result
 
 def get_user_permissions(role, custom_fields_json="{}"):
@@ -563,6 +571,17 @@ def demo_password(env_name, local_default):
     return password or local_default
 
 def ensure_default_users(db):
+    if PUBLIC_DEMO_MODE:
+        password = os.environ.get("DEMO_VIEWER_PASSWORD")
+        if os.environ.get("VERCEL") and not password:
+            raise RuntimeError("请配置 Vercel 环境变量：DEMO_VIEWER_PASSWORD")
+        db.execute("UPDATE users SET is_active=0")
+        db.execute("""INSERT INTO users(username,password_hash,display_name,role,custom_fields,is_active)
+            VALUES(?,?,?,?,?,1)
+            ON CONFLICT(username) DO UPDATE SET password_hash=excluded.password_hash,
+            display_name=excluded.display_name, role=excluded.role, custom_fields=excluded.custom_fields, is_active=1""",
+            (PUBLIC_DEMO_USER, hash_password(password or "local-demo-only"), "演示访客", "demo_viewer", "{}"))
+        return
     users = [
         ("boss",demo_password("DEMO_BOSS_PASSWORD", "boss123"),"张老板","boss","{}"),
         ("assistant",demo_password("DEMO_ASSISTANT_PASSWORD", "assist123"),"小助理","assistant","{}"),
@@ -996,6 +1015,29 @@ async def lifespan(app):
 app = FastAPI(title="珠宝协作 v2.0", lifespan=lifespan)
 app.mount("/assets", StaticFiles(directory=os.path.join(os.path.dirname(__file__),"assets")), name="assets")
 
+@app.middleware("http")
+async def public_demo_guard(request: Request, call_next):
+    """公开演示站只允许演示账号读取经过脱敏的数据。"""
+    if not PUBLIC_DEMO_MODE or not request.url.path.startswith("/api"):
+        return await call_next(request)
+    path, method = request.url.path, request.method
+    if path == "/api/health":
+        return await call_next(request)
+    if os.environ.get("DEMO_ACCESS_ENABLED", "true").lower() != "true":
+        return JSONResponse({"detail": "演示访问目前已暂停"}, status_code=403)
+    if path == "/api/auth/login":
+        return await call_next(request)
+    token = request.headers.get("Authorization", "").replace("Bearer ", "")
+    if not token or get_setting(f"token_{token}") != PUBLIC_DEMO_USER:
+        return JSONResponse({"detail": "请先登录演示账号"}, status_code=401)
+    allowed = (
+        path == "/api/auth/verify" or path == "/api/status-flow" or path == "/api/stats"
+        or path == "/api/orders" or re.fullmatch(r"/api/orders/\\d+", path)
+    )
+    if method != "GET" or not allowed:
+        return JSONResponse({"detail": "演示账号仅支持查看"}, status_code=403)
+    return await call_next(request)
+
 @app.get("/api/health")
 def health(): return {"status":"ok","time":datetime.now().isoformat()}
 
@@ -1064,6 +1106,8 @@ def delete_user(user_id:int):
 
 # ─── 订单 API（根据用户角色过滤字段）───
 def get_user_role(username):
+    if PUBLIC_DEMO_MODE:
+        return ("demo_viewer", "{}")
     with get_db() as db:
         u = db.execute("SELECT * FROM users WHERE username=?",(username,)).fetchone()
     return (u["role"], u["custom_fields"]) if u else ("boss","{}")
@@ -1453,6 +1497,10 @@ def get_stats(username:str="boss", period:str="month", basis:str="created", tren
             WHERE status IN ('pending_quote','quoted','reviewed','sent_to_client')
             ORDER BY CASE status WHEN 'quoted' THEN 1 WHEN 'pending_quote' THEN 2 WHEN 'sent_to_client' THEN 3 WHEN 'reviewed' THEN 4 END,
             due_date ASC LIMIT 6""").fetchall()]
+
+        if PUBLIC_DEMO_MODE:
+            fields = get_user_fields(role, custom)
+            workbench = [order_dict(row, fields) for row in workbench]
 
         perms = get_user_permissions(role, custom)
         if not perms.get("dashboard_finance"):
