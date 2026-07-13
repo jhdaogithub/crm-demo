@@ -603,7 +603,7 @@ body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; backg
     <div class="ai-title">AI 业务助手</div>
     <div class="ai-subtitle">贯穿仪表盘、订单、客户和设置。可以直接问待办、报价、客户资料维护和微信跟进话术。</div>
     <div class="ai-input-row">
-      <input class="ai-input" v-model="aiQ" @keyup.enter="askAI" placeholder="问 AI...">
+      <input class="ai-input" v-model="aiQ" :readonly="isDemoViewer" @click="demoReadOnly" @focus="demoReadOnly" @keyup.enter="askAI" placeholder="问 AI...">
       <button class="ai-send" @click="askAI">→</button>
     </div>
     <div class="ai-answer" v-if="aiA" v-html="aiA.replace(/\n/g,'<br>')"></div>
@@ -961,6 +961,7 @@ createApp({
     canSeeCost(){return !!this.permissions.cost;},
     canSeeFinal(){return !!this.permissions.final_price||!!this.permissions.cost;},
     canChangeStatus(){return !!this.permissions.status;},
+    isDemoViewer(){return this.user?.role==='demo_viewer';},
     periodLabel(){return ({today:'今日',week:'本周',month:'本月',year:'本年'}[this.dashboardPeriod]||'本期');},
     dashboardBasisLabel(){return this.dashboardBasis==='completed'?'付款日期':'订单创建日期';},
     chartOrders(){return this.stats.chart_data?.orders||[];},
@@ -1033,7 +1034,7 @@ createApp({
         assistant:{...none,ai:true,final_price:true,orders_create:true,orders_edit:true,after_sale:true,notifications:true},
         master:{...none,quote:true,notifications:true},
         custom:{...none,ai:true,final_price:true,notifications:true},
-        demo_viewer:{...none}
+        demo_viewer:{...none,ai:true,dashboard_finance:true,dashboard_charts:true,cost:true,final_price:true,customers:true}
       };
       return templates[role]||templates.assistant;
     },
@@ -1410,7 +1411,9 @@ createApp({
     },
 
     // AI
+    demoReadOnly(){if(this.isDemoViewer)this.toastMsg('演示账户没有输入权限');},
     async askAI(){
+      if(this.isDemoViewer){this.demoReadOnly();return;}
       if(!this.aiQ.trim())return;
       try{
         const r=await this.api('/ask',{method:'POST',body:JSON.stringify({question:this.aiQ,username:this.user.username})});
@@ -1418,7 +1421,7 @@ createApp({
       }catch(e){this.aiA='抱歉，出错了';}
       this.aiQ='';
     },
-    quickAsk(q){this.aiQ=q;this.askAI();},
+    quickAsk(q){if(this.isDemoViewer){this.demoReadOnly();return;}this.aiQ=q;this.askAI();},
 
     toastMsg(m){this.toast=m;setTimeout(()=>this.toast='',2000);},
   },

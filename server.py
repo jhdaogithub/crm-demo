@@ -69,7 +69,7 @@ ROLE_PERMISSIONS = {
     "boss": {"ai": True, "ai_config": True, "dashboard_finance": True, "dashboard_charts": True, "cost": True, "final_price": True, "customers": True, "customer_sensitive": True, "users": True, "settings": True, "orders_create": True, "orders_edit": True, "status": True, "quote": True, "payment": True, "price_edit": True, "after_sale": True, "notifications": True},
     "assistant": {"ai": True, "ai_config": False, "dashboard_finance": False, "dashboard_charts": False, "cost": False, "final_price": True, "customers": False, "customer_sensitive": False, "users": False, "settings": False, "orders_create": True, "orders_edit": True, "status": False, "quote": False, "payment": False, "price_edit": False, "after_sale": True, "notifications": True},
     "master": {"ai": False, "ai_config": False, "dashboard_finance": False, "dashboard_charts": False, "cost": False, "final_price": False, "customers": False, "customer_sensitive": False, "users": False, "settings": False, "orders_create": False, "orders_edit": False, "status": False, "quote": True, "payment": False, "price_edit": False, "after_sale": False, "notifications": True},
-    "demo_viewer": {"ai": False, "ai_config": False, "dashboard_finance": False, "dashboard_charts": False, "cost": False, "final_price": False, "customers": False, "customer_sensitive": False, "users": False, "settings": False, "orders_create": False, "orders_edit": False, "status": False, "quote": False, "payment": False, "price_edit": False, "after_sale": False, "notifications": False},
+    "demo_viewer": {"ai": True, "ai_config": False, "dashboard_finance": True, "dashboard_charts": True, "cost": True, "final_price": True, "customers": True, "customer_sensitive": False, "users": False, "settings": False, "orders_create": False, "orders_edit": False, "status": False, "quote": False, "payment": False, "price_edit": False, "after_sale": False, "notifications": False},
 }
 
 # ─── 数据库 ───
@@ -1033,9 +1033,10 @@ async def public_demo_guard(request: Request, call_next):
     allowed = (
         path == "/api/auth/verify" or path == "/api/status-flow" or path == "/api/stats"
         or path == "/api/orders" or re.fullmatch(r"/api/orders/\\d+", path)
+        or path == "/api/customers" or path.startswith("/api/customers/")
     )
     if method != "GET" or not allowed:
-        return JSONResponse({"detail": "演示账号仅支持查看"}, status_code=403)
+        return JSONResponse({"detail": "您没有此修改权限"}, status_code=403)
     return await call_next(request)
 
 @app.get("/api/health")
