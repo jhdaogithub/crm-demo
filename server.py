@@ -1483,6 +1483,10 @@ def get_stats(username:str="boss", period:str="month", basis:str="created", tren
             }
         total = db.execute("SELECT COUNT(*) as c FROM orders").fetchone()["c"]
         bs = {r["status"]:r["c"] for r in db.execute(f"SELECT status,COUNT(*) as c FROM orders WHERE {date_field}>=? GROUP BY status",(start,)).fetchall()}
+        # 演示仪表盘的业务节点要展示完整流程，不因当前时间筛选而变成 0。
+        if PUBLIC_DEMO_MODE:
+            bs = {r["status"]:r["c"] for r in db.execute(
+                "SELECT status,COUNT(*) as c FROM orders GROUP BY status").fetchall()}
         mo = db.execute(f"SELECT COUNT(*) as c FROM orders WHERE {date_field}>=?",(start,)).fetchone()["c"]
         mr = db.execute(f"SELECT COALESCE(SUM(final_price),0) as s FROM orders WHERE status IN ('confirmed','in_production','delivered') AND {date_field}>=?",(start,)).fetchone()["s"]
         mp = db.execute(f"SELECT COALESCE(SUM(profit),0) as s FROM orders WHERE status IN ('confirmed','in_production','delivered') AND {date_field}>=?",(start,)).fetchone()["s"]
@@ -1508,7 +1512,7 @@ def get_stats(username:str="boss", period:str="month", basis:str="created", tren
             mr = 0
             mp = 0
             pending_revenue = 0
-        chart_data = build_chart_series(db, date_field, trend_days) if perms.get("dashboard_charts") else {"orders": [], "finance": [], "granularity": "day"}
+        chart_data = build_chart_series(db, date_field, trend_days) if (PUBLIC_DEMO_MODE or perms.get("dashboard_charts")) else {"orders": [], "finance": [], "granularity": "day"}
         return {
             "total_orders":total,"period_orders":mo,"month_orders":mo,"month_revenue":mr,"month_profit":mp,
             "pending_quote":bs.get("pending_quote",0),"need_review":bs.get("quoted",0),
