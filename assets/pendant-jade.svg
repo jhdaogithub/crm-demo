@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 520">
+  <rect width="720" height="520" fill="#f6f1e9"/>
+  <path d="M360 70 C315 130 315 190 360 245 C405 190 405 130 360 70Z" fill="#d4b164"/>
+  <circle cx="360" cy="300" r="130" fill="#86c0a4" stroke="#d4b164" stroke-width="26"/>
+  <circle cx="360" cy="300" r="54" fill="#f6f1e9" stroke="#b7dfcc" stroke-width="12"/>
+  <path d="M255 300 C300 245 420 245 465 300 C420 355 300 355 255 300Z" fill="none" stroke="#eafff4" stroke-width="8" opacity=".7"/>
+  <text x="42" y="70" fill="#2c2416" font-family="Arial" font-size="30" font-weight="700">翡翠平安扣吊坠</text>
+  <text x="42" y="112" fill="#8b7355" font-family="Arial" font-size="22">送母亲 · 寓意平安 · 18K金扣头</text>
+</svg>

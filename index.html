@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>珠宝协作 v2.0</title>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<style>
+:root {
+  --bg:#f7f3ed; --panel:#ffffff; --card:#fffdf9; --text:#1d1712; --text2:#7b6f63;
+  --line:#e8ddcf; --gold:#b8893a; --gold-light:#f7efe1; --gold-dark:#74501f;
+  --jade:#1f6f5b; --rose:#9f5f55; --ink:#101820; --accent:#13221f;
+  --red:#b42318; --green:#067647; --blue:#175cd3;
+  --shadow:0 18px 50px rgba(49,37,24,.12); --shadow-soft:0 8px 24px rgba(49,37,24,.06); --radius:10px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:radial-gradient(circle at 12% 8%, rgba(184,137,58,.15), transparent 28%), linear-gradient(135deg,#fbf7f0 0%,#f2eadf 48%,#eef4f1 100%); color:var(--text); -webkit-font-smoothing:antialiased; }
+.container { width:100%; min-height:100vh; padding:24px 380px 24px 260px; }
+
+/* Login */
+.login-page { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:80vh; text-align:center; }
+.login-card { background:var(--card); border-radius:16px; padding:32px 24px; width:100%; max-width:360px; box-shadow:0 4px 12px rgba(0,0,0,.08); }
+.login-card h1 { font-size:24px; margin-bottom:4px; }
+.login-card .subtitle { color:var(--text2); font-size:14px; margin-bottom:24px; }
+.login-card input { width:100%; padding:12px; margin-bottom:12px; border:1.5px solid #e0dcd5; border-radius:8px; font-size:15px; background:var(--card); }
+.login-card input:focus { outline:none; border-color:var(--gold); }
+.login-btn { width:100%; padding:12px; background:var(--accent); color:#fff; border:none; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer; }
+.login-hint { margin-top:16px; font-size:12px; color:var(--text2); line-height:1.8; }
+
+/* Navbar */
+.nav { position:fixed; left:18px; top:18px; bottom:18px; width:220px; background:linear-gradient(180deg,#10251f 0%,#0b1214 68%,#21180d 100%); color:#fff; padding:18px; border-radius:18px; display:block; z-index:20; box-shadow:var(--shadow); border:1px solid rgba(255,255,255,.08); }
+.nav h1 { font-size:20px; line-height:1.25; margin-bottom:16px; }
+.nav-right { display:flex; gap:8px; align-items:center; }
+.nav-right button { background:transparent; border:1px solid rgba(255,255,255,.2); color:#fff; padding:4px 10px; border-radius:14px; font-size:11px; cursor:pointer; }
+.nav-right button.active { background:var(--gold); border-color:var(--gold); color:#2c2416; font-weight:600; }
+.user-info { display:block; font-size:12px; color:#d1d5db; margin:12px 0; line-height:1.7; }
+.nav button { background:rgba(255,255,255,.08); color:#fff; border:1px solid rgba(255,255,255,.16); border-radius:8px; padding:7px 10px; cursor:pointer; }
+
+/* Tab bar */
+.tab-bar { position:fixed; left:36px; top:136px; width:184px; display:flex; flex-direction:column; gap:6px; z-index:30; }
+.tab-bar button { width:100%; padding:11px 12px; border-radius:10px; border:0; background:transparent; font-size:14px; cursor:pointer; white-space:nowrap; color:#d1d5db; text-align:left; }
+.tab-bar button.active { background:linear-gradient(135deg,#fffaf0,#f1e1c2); color:#14231f; box-shadow:0 8px 20px rgba(0,0,0,.12); }
+
+/* Views */
+.view { display:none; }
+.view.active { display:block; animation:fadeIn .3s; }
+@keyframes fadeIn { from {opacity:0;transform:translateY(6px);} to {opacity:1;transform:translateY(0);} }
+.page-header { display:flex; justify-content:space-between; align-items:flex-end; gap:16px; margin-bottom:18px; }
+.page-title { font-size:26px; font-weight:850; letter-spacing:0; }
+.page-subtitle { margin-top:4px; color:var(--text2); font-size:13px; line-height:1.5; }
+.page-action { display:flex; gap:8px; align-items:center; }
+.page-action .btn { width:auto; }
+
+/* Stats */
+.stats-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin-bottom:18px; }
+.stat-card { background:linear-gradient(180deg,#fffefb,#fbf6ed); border:1px solid var(--line); border-radius:var(--radius); padding:18px; box-shadow:var(--shadow-soft); }
+.stat-card.clickable { cursor:pointer; transition:transform .15s, box-shadow .15s; }
+.stat-card.clickable:active { transform:scale(.98); }
+.stat-card .num { font-size:26px; font-weight:850; color:var(--accent); font-family:Georgia,"Times New Roman",serif; }
+.stat-card .label { font-size:12px; color:var(--text2); }
+.stat-card.full { grid-column:span 2; }
+.chart-section { display:grid; grid-template-columns:1fr; gap:14px; margin:4px 0 18px; }
+.chart-card { background:rgba(255,253,249,.94); border:1px solid var(--line); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow-soft); }
+.chart-head { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; margin-bottom:10px; }
+.chart-title { font-size:15px; font-weight:800; }
+.chart-subtitle { font-size:12px; color:var(--text2); margin-top:3px; }
+.chart-range { display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end; }
+.chart-range button { border:1px solid var(--line); background:#fffaf2; border-radius:999px; padding:5px 9px; color:var(--text2); font-size:11px; cursor:pointer; }
+.chart-range button.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+.chart-svg-wrap { width:100%; overflow:hidden; }
+.line-chart,.combo-chart { width:100%; height:260px; display:block; overflow:visible; }
+.axis-line { stroke:#d8c9b8; stroke-width:1; }
+.grid-line { stroke:#eadfce; stroke-width:1; stroke-dasharray:3 5; }
+.axis-text { fill:#806f5f; font-size:11px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+.bar-svg { fill:url(#revenueBar); rx:4; }
+.bar-svg { cursor:pointer; transition:opacity .15s; }
+.bar-svg:hover { opacity:.72; }
+.bar-svg.profit { fill:url(#profitBar); opacity:.92; }
+.point-label { fill:#3a3028; font-size:11px; font-weight:700; }
+.chart-legend { display:flex; gap:12px; margin-top:10px; font-size:11px; color:var(--text2); }
+.legend-dot { width:9px; height:9px; border-radius:50%; display:inline-block; margin-right:5px; background:var(--gold); }
+.legend-dot.jade { background:var(--jade); }
+.chart-hover-tip { position:fixed; z-index:220; pointer-events:none; min-width:150px; background:#10251f; color:#fffaf2; border:1px solid rgba(255,255,255,.14); border-radius:10px; padding:10px 12px; box-shadow:0 16px 36px rgba(0,0,0,.24); font-size:12px; line-height:1.55; }
+.chart-hover-tip b { display:block; margin-bottom:4px; font-size:13px; }
+.period-tabs { display:flex; gap:6px; margin-bottom:10px; }
+.period-tabs button { flex:1; padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--text2); font-size:13px; }
+.period-tabs button.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+.order-toolbar { display:flex; gap:6px; align-items:center; margin-bottom:8px; }
+.order-toolbar .form-select { flex:1; padding:8px 10px; font-size:13px; }
+.filter-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:12px; }
+.filter-grid .form-input,.filter-grid .form-select { padding:8px 10px; font-size:13px; }
+.status-flow { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:12px; box-shadow:var(--shadow-soft); margin:12px 0; }
+.status-flow summary { cursor:pointer; font-weight:700; font-size:13px; }
+.flow-step { display:grid; grid-template-columns:78px 1fr; gap:8px; padding:7px 0; border-bottom:1px solid #eee7dc; font-size:12px; }
+.flow-step:last-child { border-bottom:0; }
+.flow-step b { color:var(--accent); }
+.perm-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.perm-item { display:flex; gap:6px; align-items:center; background:var(--gold-light); padding:8px; border-radius:8px; font-size:12px; }
+.workbench-title { font-size:13px; color:var(--text2); margin:4px 0 8px; display:flex; justify-content:space-between; }
+.work-item { display:grid; grid-template-columns:82px 1fr; gap:12px; background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:12px; box-shadow:var(--shadow-soft); margin-bottom:10px; cursor:pointer; }
+.work-img,.order-img { width:100%; aspect-ratio:1.25/1; object-fit:cover; border-radius:8px; background:#eee7dc; }
+.work-title { font-size:14px; font-weight:700; margin-bottom:4px; }
+.work-meta { font-size:12px; color:var(--text2); line-height:1.6; }
+.chip-row { display:flex; gap:5px; flex-wrap:wrap; margin-top:6px; }
+.chip { font-size:10px; padding:3px 7px; border-radius:12px; background:var(--gold-light); color:var(--gold-dark); }
+
+/* Card */
+.card { background:rgba(255,253,249,.92); border:1px solid var(--line); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow-soft); margin-bottom:10px; cursor:pointer; backdrop-filter:blur(10px); }
+.order-card { display:grid; grid-template-columns:104px 1fr; gap:14px; align-items:start; }
+.card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; }
+.card-title { font-size:15px; font-weight:600; }
+.card-subtitle { font-size:12px; color:var(--text2); }
+.status-badge { padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap; }
+.status-badge,.term-label { cursor:help; }
+.status-tip-backdrop { position:fixed; inset:0; z-index:210; background:rgba(16,24,32,.12); display:flex; align-items:center; justify-content:center; padding:20px; }
+.status-tip { width:min(340px,100%); background:#fffdf9; border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); padding:16px; }
+.status-tip h4 { font-size:16px; margin-bottom:6px; }
+.status-tip p { font-size:13px; color:var(--text2); line-height:1.7; }
+.status-pending_quote,.status-draft { background:#fdecea; color:#c0392b; }
+.status-quoting { background:#fff3e0; color:#e67e22; }
+.status-quoted { background:#fffde7; color:#f39c12; }
+.status-reviewed,.status-sent_to_client { background:#e8f5e9; color:#27ae60; }
+.status-confirmed,.status-in_production { background:#e3f2fd; color:#1565c0; }
+.status-delivered { background:#f3e5f5; color:#7b1fa2; }
+
+/* Buttons */
+.btn { padding:10px 16px; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; border:none; text-align:center; }
+.btn-primary { background:var(--accent); color:#fff; width:100%; }
+.btn-gold { background:linear-gradient(135deg,var(--gold),var(--gold-dark)); color:#fff; width:100%; }
+.btn-outline { background:transparent; border:1.5px solid var(--accent); color:var(--accent); width:100%; }
+.btn-sm { padding:5px 12px; font-size:12px; border-radius:6px; width:auto; }
+
+/* Form */
+.form-group { margin-bottom:12px; }
+.form-label { font-size:13px; font-weight:600; color:var(--text2); display:block; margin-bottom:4px; }
+.form-input,.form-select,.form-textarea { width:100%; padding:10px 12px; border:1.5px solid #e0dcd5; border-radius:8px; font-size:15px; background:var(--card); font-family:inherit; -webkit-appearance:none; }
+.form-input:focus,.form-select:focus,.form-textarea:focus { outline:none; border-color:var(--gold); }
+.form-textarea { min-height:80px; resize:vertical; }
+
+/* Modal */
+.modal-overlay { position:fixed; inset:0; background:rgba(15,23,42,.42); z-index:100; display:flex; align-items:center; justify-content:center; padding:22px; }
+.modal { background:var(--card); border-radius:16px; width:min(880px,100%); max-height:88vh; overflow-y:auto; padding:24px; animation:slideUp .25s; box-shadow:var(--shadow); }
+@keyframes slideUp { from {transform:translateY(100%);} to {transform:translateY(0);} }
+.modal-close { float:right; width:28px; height:28px; border-radius:50%; background:#f0ede7; border:none; font-size:16px; cursor:pointer; line-height:28px; text-align:center; }
+
+/* Kanban */
+.kanban { display:flex; gap:6px; overflow-x:auto; padding-bottom:8px; }
+.kanban-col { flex:1 0 210px; background:#eef0f3; border-radius:var(--radius); padding:10px; }
+.kanban-col h3 { font-size:11px; color:var(--text2); margin-bottom:6px; }
+.kanban-card { background:var(--card); border-radius:6px; padding:8px; font-size:12px; margin-bottom:4px; }
+
+/* AI */
+.ai-panel { position:fixed; right:18px; top:18px; bottom:18px; width:340px; background:var(--card); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow); padding:16px; margin:0; z-index:25; display:flex; flex-direction:column; }
+.ai-title { font-size:16px; font-weight:800; margin-bottom:4px; }
+.ai-subtitle { font-size:12px; color:var(--text2); line-height:1.5; margin-bottom:12px; }
+.ai-input-row { display:flex; gap:8px; }
+.ai-input { flex:1; padding:10px 14px; border:1.5px solid #e0dcd5; border-radius:24px; font-size:14px; background:#f9f8f6; outline:none; }
+.ai-input:focus { border-color:var(--gold); }
+.ai-send { width:44px; height:44px; border-radius:50%; background:var(--accent); color:#fff; border:none; font-size:18px; cursor:pointer; flex-shrink:0; }
+.ai-answer { margin-top:10px; padding:12px; background:var(--gold-light); border-radius:8px; font-size:13px; line-height:1.7; white-space:pre-line; overflow-y:auto; flex:1; min-height:160px; }
+.ai-hints { display:flex; gap:4px; margin-top:6px; flex-wrap:wrap; }
+.ai-hint { padding:4px 8px; background:#f0ede7; border-radius:12px; font-size:10px; color:var(--text2); cursor:pointer; border:none; }
+
+/* Quote card */
+.quote-card { background:#fff; border:2px solid var(--gold); border-radius:12px; padding:20px; text-align:center; font-family:serif; line-height:2; white-space:pre; overflow-x:auto; }
+.detail-img { width:100%; max-height:230px; object-fit:cover; border-radius:10px; margin:10px 0; background:#eee7dc; }
+.field-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:10px 0; }
+.field-pill { background:var(--gold-light); border-radius:8px; padding:8px; font-size:12px; }
+.field-pill b { display:block; font-size:11px; color:var(--text2); margin-bottom:2px; }
+
+/* Toast */
+.toast { position:fixed; top:24px; left:50%; transform:translateX(-50%); background:var(--accent); color:#fff; padding:10px 24px; border-radius:24px; font-size:13px; z-index:200; }
+
+/* Customer profile */
+.cust-card { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow-soft); margin-bottom:10px; cursor:pointer; }
+.cust-card.vip { border-left:3px solid var(--gold); }
+.cust-name { font-size:16px; font-weight:700; }
+.cust-stats { display:flex; gap:16px; margin-top:8px; font-size:13px; }
+.cust-stats div { text-align:center; }
+.cust-stats .val { font-size:20px; font-weight:800; }
+
+/* Notifications */
+.notif-item { padding:10px 12px; border-left:3px solid var(--gold); margin-bottom:6px; background:var(--card); border-radius:4px; font-size:13px; }
+
+@media (prefers-color-scheme:dark) {
+  :root { --bg:#1a1816; --card:#262320; --text:#e8e0d5; --text2:#a09080; --gold-light:#2a2620; --shadow:0 1px 3px rgba(0,0,0,.3); }
+  .form-input,.form-select,.form-textarea { background:#2e2a26; border-color:#3d3830; color:#e8e0d5; }
+  .ai-input { background:#2e2a26; }
+  .ai-hint { background:#2e2a26; }
+  .login-card input { background:#2e2a26; border-color:#3d3830; color:#e8e0d5; }
+  .tab-bar button { background:#2e2a26; border-color:#3d3830; }
+}
+@media (max-width:1180px) {
+  .container { padding-right:24px; }
+  .ai-panel { position:static; width:auto; margin-top:18px; display:block; }
+  .chart-section { grid-template-columns:1fr; }
+}
+@media (max-width:900px) {
+  .container { padding:12px 12px 78px; max-width:none; }
+  .nav { position:static; width:auto; border-radius:14px; padding:14px 16px; display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .nav h1 { font-size:17px; margin:0; }
+  .user-info { display:inline; margin:0; font-size:11px; }
+  .tab-bar { position:fixed; left:10px; right:10px; top:auto; bottom:10px; width:auto; flex-direction:row; background:#111827; border-radius:16px; padding:6px; box-shadow:var(--shadow); overflow-x:auto; }
+  .tab-bar button { text-align:center; color:#d1d5db; padding:9px 12px; font-size:12px; }
+  .tab-bar button.active { color:#111827; }
+  .stats-grid { grid-template-columns:1fr 1fr; gap:8px; }
+  .page-header { display:block; margin-bottom:12px; }
+  .page-title { font-size:22px; }
+  .page-action { margin-top:10px; }
+  .page-action .btn { width:100%; }
+  .stat-card.full { grid-column:1/-1; }
+  .chart-section { grid-template-columns:1fr; gap:10px; }
+  .line-chart,.combo-chart { height:220px; }
+  .filter-grid { grid-template-columns:1fr 1fr; }
+  .order-card { grid-template-columns:82px 1fr; }
+  .modal-overlay { align-items:flex-end; padding:0; }
+  .modal { width:100%; max-height:88vh; border-radius:16px 16px 0 0; padding:20px; }
+  .ai-panel { border-radius:14px; }
+}
+@media (max-width:560px) {
+  .filter-grid,.field-grid { grid-template-columns:1fr 1fr; }
+  .stats-grid { grid-template-columns:1fr 1fr; }
+  .period-tabs { overflow-x:auto; }
+  .period-tabs button { min-width:86px; }
+  .chart-card { padding:12px; }
+  .line-chart,.combo-chart { height:200px; }
+}
+@media (max-width:430px) {
+  .filter-grid { grid-template-columns:1fr; }
+  .field-grid { grid-template-columns:1fr 1fr; }
+  .card-header { display:block; }
+  .status-badge { display:inline-block; margin-top:6px; }
+}
+</style></head>
+<body>
+<div id="app"><div class="container">
+
+<!-- ═══ 登录页 ═══ -->
+<div class="login-page" v-if="!user">
+  <div class="login-card">
+    <h1>💎 珠宝协作</h1>
+    <div class="subtitle">订单管理系统 v2.0</div>
+    <input v-model="loginForm.username" placeholder="用户名" @keyup.enter="login">
+    <input v-model="loginForm.password" type="password" placeholder="密码" @keyup.enter="login">
+    <button class="login-btn" @click="login">登 录</button>
+    <div class="login-hint" v-if="loginError" style="color:var(--red);">{{loginError}}</div>
+    <div class="login-hint">
+      演示账号：<br>
+      老板 boss/boss123 | 助理 assist/assist123<br>
+      师傅 master/master123 | 财务 custom/custom123
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 主界面 ═══ -->
+<template v-if="user">
+
+  <div class="nav">
+    <h1>💎 {{shopName}}</h1>
+    <div>
+      <span class="user-info">{{user.display_name}}（{{roleName}}）</span>
+      <button @click="logout" style="margin-left:8px;font-size:11px;">退出</button>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <button :class="{active:tab==='dashboard'}" @click="tab='dashboard'">📊 仪表盘</button>
+    <button :class="{active:tab==='orders'}" @click="tab='orders'">📋 订单</button>
+    <button v-if="permissions.customers" :class="{active:tab==='customers'}" @click="tab='customers';loadCustomers()">👤 客户</button>
+    <button v-if="permissions.settings" :class="{active:tab==='settings'}" @click="tab='settings';loadSettings()">🔧 设置</button>
+    <button :class="{active:tab==='notifications'}" @click="tab='notifications';loadNotifications()">🔔</button>
+  </div>
+
+  <div class="toast" v-if="toast" @click="toast=''">{{toast}}</div>
+  <div class="status-tip-backdrop" v-if="statusTip" @click="statusTip=null">
+    <div class="status-tip" @click.stop>
+      <h4>{{statusTip.label}}</h4>
+      <p>{{statusTip.description}}</p>
+    </div>
+  </div>
+<div class="status-tip-backdrop" v-if="chartTip" @click="chartTip=null">
+  <div class="status-tip" @click.stop>
+    <h4>{{chartTip.title}}</h4>
+    <p v-for="line in chartTip.lines" :key="line">{{line}}</p>
+  </div>
+</div>
+<div class="chart-hover-tip" v-if="chartHoverTip" :style="{left:chartHoverTip.x+'px',top:chartHoverTip.y+'px'}">
+  <b>{{chartHoverTip.title}}</b>
+  <div v-for="line in chartHoverTip.lines" :key="line">{{line}}</div>
+</div>
+
+  <!-- ═══ 仪表盘 ═══ -->
+  <div class="view" :class="{active:tab==='dashboard'}">
+    <div class="page-header">
+      <div><div class="page-title">{{user.role==='master'?'报价仪表盘':'经营仪表盘'}}</div><div class="page-subtitle">{{user.role==='master'?'只显示需要你报价、已提交报价、老板已审核通过的报价订单。':'按业务节点、收款口径和优先级查看今日需要推进的订单。'}}</div></div>
+    </div>
+    <div class="period-tabs" v-if="user.role!=='master'">
+      <button v-for="p in periods" :key="p.key" :class="{active:dashboardPeriod===p.key}" @click="dashboardPeriod=p.key;loadStats()">{{p.label}}</button>
+    </div>
+    <div class="period-tabs" v-if="user.role!=='master'" style="margin-top:-4px;">
+      <button :class="{active:dashboardBasis==='created'}" @click="dashboardBasis='created';loadStats();loadOrders()">按订单创建日期</button>
+      <button :class="{active:dashboardBasis==='completed'}" @click="dashboardBasis='completed';loadStats();loadOrders()">按付款完成日期</button>
+    </div>
+    <div v-if="user.role!=='master'" style="font-size:12px;color:var(--text2);margin:-2px 0 10px;">
+      当前时间口径：{{stats.date_basis_label||dashboardBasisLabel}}。选择“付款完成日期”时，完成时间按客户付清尾款的付款日期计算。
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card clickable" @click="drillStatus('pending_quote')"><div class="num">{{stats.pending_quote||0}}</div><div class="label term-label" :title="statusDescription('pending_quote')" @click.stop="showStatusTip('pending_quote')">🔴 待报价</div></div>
+      <div class="stat-card clickable" @click="drillStatus('quoted')"><div class="num">{{stats.need_review||0}}</div><div class="label term-label" :title="statusDescription('quoted')" @click.stop="showStatusTip('quoted')">{{user.role==='master'?'🟡 已报价':'🟡 待审核'}}</div></div>
+      <div class="stat-card clickable" v-if="user.role==='master'" @click="drillStatus('reviewed')"><div class="num">{{stats.reviewed_quote||0}}</div><div class="label term-label" :title="statusDescription('reviewed')" @click.stop="showStatusTip('reviewed')">🟢 老板已审核</div></div>
+      <div class="stat-card clickable" v-if="user.role==='boss'" @click="drillMetric('profit')"><div class="num">¥{{(stats.month_profit||0).toLocaleString()}}</div><div class="label">{{periodLabel}}利润</div></div>
+      <div class="stat-card clickable" v-if="user.role==='boss'" @click="drillMetric('revenue')"><div class="num">¥{{(stats.month_revenue||0).toLocaleString()}}</div><div class="label">{{periodLabel}}营收</div></div>
+      <div class="stat-card full" v-if="user.role==='boss'">
+        <div style="display:flex;justify-content:space-between;">
+          <div @click="drillStatus('sent_to_client')" style="cursor:pointer;"><div class="label">待收款</div><div style="font-size:18px;font-weight:700;">¥{{(stats.pending_revenue||0).toLocaleString()}}</div></div>
+          <div @click="drillPeriod()" style="cursor:pointer;"><div class="label">{{periodLabel}}{{dashboardBasis==='completed'?'完成付款':'新增'}}</div><div style="font-size:18px;font-weight:700;">{{stats.period_orders||0}} 单</div></div>
+          <div @click="clearOrderFilter()" style="cursor:pointer;"><div class="label">总订单</div><div style="font-size:18px;font-weight:700;">{{stats.total_orders||0}}</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-section" v-if="user.role==='boss'&&permissions.dashboard_charts">
+      <div class="chart-card">
+        <div class="chart-head">
+          <div>
+            <div class="chart-title">订单数量增长</div>
+            <div class="chart-subtitle">按{{stats.date_basis_label||dashboardBasisLabel}}统计，展示所选区间新增订单趋势。</div>
+          </div>
+          <div class="chart-range">
+            <button v-for="r in chartRanges" :key="r.days" :class="{active:chartDays===r.days}" @click="chartDays=r.days;loadStats()">{{r.label}}</button>
+          </div>
+        </div>
+        <div class="chart-svg-wrap">
+          <svg class="line-chart" viewBox="0 0 760 260" preserveAspectRatio="xMidYMid meet">
+            <defs><linearGradient id="goldFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#b8893a" stop-opacity=".24"/><stop offset="100%" stop-color="#b8893a" stop-opacity="0"/></linearGradient></defs>
+            <g v-for="t in yTicks(orderMax)" :key="'oy'+t.value">
+              <line class="grid-line" x1="64" x2="724" :y1="t.y" :y2="t.y"></line>
+              <text class="axis-text" x="52" :y="t.y+4" text-anchor="end">{{t.value}}</text>
+            </g>
+            <line class="axis-line" x1="64" y1="214" x2="724" y2="214"></line>
+            <line class="axis-line" x1="64" y1="26" x2="64" y2="214"></line>
+            <path :d="areaPath(chartOrders,orderMax)" fill="url(#goldFill)"></path>
+            <path :d="linePath(chartOrders,orderMax)" fill="none" stroke="#b8893a" stroke-width="3" stroke-linecap="round"></path>
+            <g v-for="p in chartKeyPoints(chartOrders,orderMax)" :key="p.label">
+              <circle :cx="p.x" :cy="p.y" r="4" fill="#fffaf2" stroke="#b8893a" stroke-width="2"></circle>
+              <text class="point-label" :x="p.x" :y="p.y-9" text-anchor="middle">{{p.value}}</text>
+            </g>
+            <g v-for="p in xTicks(chartOrders)" :key="'ox'+p.label">
+              <text class="axis-text" :x="p.x" y="238" text-anchor="middle">{{formatChartLabel(p.label)}}</text>
+            </g>
+          </svg>
+        </div>
+        <div class="chart-legend"><span><i class="legend-dot"></i>新增订单</span><span>{{chartLabel}}</span></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-head">
+          <div>
+            <div class="chart-title">周期性营收与利润</div>
+            <div class="chart-subtitle">仅老板可见，按已确认/制作中/已交付订单统计。</div>
+          </div>
+        </div>
+        <div class="chart-svg-wrap">
+          <svg class="combo-chart" viewBox="0 0 760 260" preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <linearGradient id="revenueBar" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#b8893a"/><stop offset="100%" stop-color="#ead29b"/></linearGradient>
+              <linearGradient id="profitBar" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1f6f5b"/><stop offset="100%" stop-color="#8fc3ae"/></linearGradient>
+            </defs>
+            <g v-for="t in yTicks(financeMax)" :key="'fy'+t.value">
+              <line class="grid-line" x1="76" x2="724" :y1="t.y" :y2="t.y"></line>
+              <text class="axis-text" x="64" :y="t.y+4" text-anchor="end">{{formatMoneyShort(t.value)}}</text>
+            </g>
+            <line class="axis-line" x1="76" y1="214" x2="724" y2="214"></line>
+            <line class="axis-line" x1="76" y1="26" x2="76" y2="214"></line>
+            <g v-for="b in financeBars" :key="b.label">
+              <rect class="bar-svg" :x="b.revenue.x" :y="b.revenue.y" :width="b.width" :height="b.revenue.h" @mousemove="showChartHover($event,b,'revenue')" @mouseleave="chartHoverTip=null" @click.stop="showChartTip(b,'revenue')">
+                <title>{{chartBarTitle(b,'revenue')}}</title>
+              </rect>
+              <rect class="bar-svg profit" :x="b.profit.x" :y="b.profit.y" :width="b.width" :height="b.profit.h" @mousemove="showChartHover($event,b,'profit')" @mouseleave="chartHoverTip=null" @click.stop="showChartTip(b,'profit')">
+                <title>{{chartBarTitle(b,'profit')}}</title>
+              </rect>
+              <text class="axis-text" :x="b.cx" y="238" text-anchor="middle">{{formatChartLabel(b.label)}}</text>
+            </g>
+          </svg>
+        </div>
+        <div class="chart-legend"><span><i class="legend-dot"></i>营收</span><span><i class="legend-dot jade"></i>利润</span><span>{{chartLabel}}</span></div>
+      </div>
+    </div>
+
+    <div class="workbench-title" v-if="stats.workbench&&stats.workbench.length">
+      <span>{{user.role==='master'?'报价任务':'今日优先处理'}}</span><span>{{stats.workbench.length}} 单</span>
+    </div>
+    <div class="work-item" v-for="o in stats.workbench||[]" :key="'w'+o.id" @click="openOrder(o)">
+      <img class="work-img" :src="o.image_url||'/assets/ring-emerald.svg'">
+      <div>
+        <div class="work-title">{{o.order_number}}</div>
+        <div class="work-meta">{{statusLabel(o.status)}} · {{orderSubtitle(o)}}</div>
+        <div class="work-meta" v-if="o.follow_up_note&&user.role!=='master'">{{o.follow_up_note}}</div>
+        <div class="chip-row">
+          <span class="chip" v-if="o.due_date&&user.role!=='master'">交付 {{o.due_date}}</span>
+          <span class="chip" v-if="o.final_price>0&&canSeeFinal">¥{{o.final_price.toLocaleString()}}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 看板 -->
+    <div class="kanban" v-if="kanbanCols.length>0">
+      <div class="kanban-col" v-for="c in kanbanCols" :key="c.status">
+        <h3 class="term-label" :title="statusDescription(c.status)" @click.stop="showStatusTip(c.status)">{{c.label}}（{{c.orders.length}}）</h3>
+        <div class="kanban-card" v-for="o in c.orders" :key="o.id" @click="openOrder(o)">
+          {{o.order_number}}<br>
+          <small>{{orderSubtitle(o)}}{{(o.final_price>0&&canSeeFinal)?' ¥'+o.final_price.toLocaleString():''}}</small>
+        </div>
+      </div>
+    </div>
+    <details class="status-flow">
+      <summary>查看订单节点含义</summary>
+      <div class="flow-step" v-for="s in statusFlow" :key="s.key">
+        <b>{{s.label}}</b><span>{{s.description}}</span>
+      </div>
+    </details>
+  </div>
+
+  <!-- ═══ 订单列表 ═══ -->
+  <div class="view" :class="{active:tab==='orders'}">
+    <div class="page-header">
+      <div><div class="page-title">{{user.role==='master'?'师傅报价台':'订单工作台'}}</div><div class="page-subtitle">{{user.role==='master'?'只显示需要报价和已经提交过成本的订单。你只能看到材料清单、用量和自己的成本填写状态。':'从需求录入、师傅报价、老板审核、客户确认到收款交付的完整流程。'}}</div></div>
+      <div class="page-action" v-if="permissions.orders_create"><button class="btn btn-primary" @click="showNewOrder=true">＋ 新建订单</button></div>
+    </div>
+    <div class="order-toolbar">
+      <select class="form-select" v-model="orderFilterStatus" @change="orderMetric='';orderListTitle='';orderUseDashboardPeriod=false;loadOrders()">
+        <option value="">全部状态</option>
+        <option v-for="s in statusFlow" :key="s.key" :value="s.key">{{s.label}}</option>
+      </select>
+    </div>
+    <div class="filter-grid" v-if="user.role!=='master'">
+      <input class="form-input" v-model.number="orderFilters.amount_min" @change="orderUseDashboardPeriod=false;orderListTitle='';loadOrders()" type="number" placeholder="最低金额">
+      <input class="form-input" v-model.number="orderFilters.amount_max" @change="orderUseDashboardPeriod=false;orderListTitle='';loadOrders()" type="number" placeholder="最高金额">
+      <input class="form-input" v-model="orderFilters.date_from" @change="orderUseDashboardPeriod=false;orderListTitle='';loadOrders()" type="date">
+      <input class="form-input" v-model="orderFilters.date_to" @change="orderUseDashboardPeriod=false;orderListTitle='';loadOrders()" type="date">
+      <select class="form-select" v-model="orderFilters.source" @change="orderUseDashboardPeriod=false;orderListTitle='';loadOrders()">
+        <option value="">全部来源</option>
+        <option>微信老客群</option><option>小红书私信</option><option>朋友转介绍</option><option>线下到店</option><option>老客户复购</option>
+      </select>
+      <select class="form-select" v-if="user.role==='boss'||permissions.payment" v-model="orderFilters.payment_status" @change="orderUseDashboardPeriod=false;orderListTitle='';loadOrders()">
+        <option value="">全部收款</option>
+        <option value="paid">已付清</option>
+        <option value="unpaid">未付清</option>
+      </select>
+      <button class="btn btn-outline btn-sm" @click="resetOrderFilters">重置筛选</button>
+    </div>
+    <details class="status-flow" v-if="user.role!=='master'">
+      <summary>节点名称含义</summary>
+      <div class="flow-step" v-for="s in statusFlow" :key="s.key">
+        <b>{{s.label}}</b><span>{{s.description}}</span>
+      </div>
+    </details>
+    <div v-if="orderListTitle" style="font-size:12px;color:var(--text2);margin-bottom:8px;">{{orderListTitle}} <button class="btn btn-sm btn-outline" @click="clearOrderFilter()">清除</button></div>
+    <div class="card order-card" v-for="o in orders" :key="o.id" @click="openOrder(o)">
+      <img class="order-img" :src="o.image_url||'/assets/ring-emerald.svg'">
+      <div>
+        <div class="card-header">
+          <div><div class="card-title">{{o.order_number}}</div>
+          <div class="card-subtitle">{{orderSubtitle(o)}}</div></div>
+          <span class="status-badge" :class="'status-'+o.status" :title="statusDescription(o.status)" @click.stop="showStatusTip(o.status)">{{statusLabel(o.status)}}</span>
+        </div>
+        <div class="card-subtitle" v-if="o.design_brief">{{o.design_brief}}</div>
+        <div class="chip-row">
+          <span class="chip" v-if="o.budget">预算 ¥{{o.budget.toLocaleString()}}</span>
+          <span class="chip" v-if="o.due_date">交付 {{o.due_date}}</span>
+          <span class="chip" v-if="o.customer_source">{{o.customer_source}}</span>
+          <span class="chip" v-if="user.role==='boss'||permissions.payment">{{o.is_paid?'已付清':'未付清'}}</span>
+        </div>
+        <div v-if="o.final_price>0&&canSeeFinal" style="color:var(--gold-dark);font-weight:600;margin-top:6px;">¥{{o.final_price.toLocaleString()}}</div>
+      </div>
+    </div>
+    <div v-if="orders.length===0" style="text-align:center;padding:40px;color:var(--text2);">暂无订单</div>
+  </div>
+
+  <!-- ═══ 客户列表 ═══ -->
+  <div class="view" :class="{active:tab==='customers'}">
+    <div class="page-header">
+      <div><div class="page-title">客户资产</div><div class="page-subtitle">以客户为维度管理订单历史、消费价值、偏好和维护资料。</div></div>
+    </div>
+    <div class="filter-grid">
+      <input class="form-input" v-model="customerFilters.keyword" placeholder="搜索客户名">
+      <select class="form-select" v-model="customerFilters.vip">
+        <option value="">全部客户</option>
+        <option value="vip">VIP客户</option>
+        <option value="regular">普通客户</option>
+      </select>
+      <input class="form-input" v-model.number="customerFilters.min_spent" type="number" placeholder="最低消费">
+      <select class="form-select" v-model="customerFilters.recent">
+        <option value="">不限最近</option>
+        <option value="30">30天内</option>
+        <option value="90">90天内</option>
+      </select>
+    </div>
+    <div style="margin-bottom:8px;font-size:13px;color:var(--text2);">消费排行 · {{filteredCustomers.length}} 位</div>
+    <div class="cust-card" v-for="c in filteredCustomers" :key="c.name" :class="{vip:c.is_vip}" @click="showCustomer(c.name)">
+      <div class="cust-name">{{c.name}} {{c.is_vip?'👑':''}}</div>
+      <div class="cust-stats">
+        <div><div class="val">¥{{c.total_spent.toLocaleString()}}</div><small>总消费</small></div>
+        <div><div class="val">{{c.order_count}}</div><small>单</small></div>
+        <div><div class="val">{{c.last_order?.substring(0,10)||'-'}}</div><small>最近</small></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 账号管理（旧入口保留但不在菜单展示）═══ -->
+  <div class="view" :class="{active:tab==='users'}">
+    <button class="btn btn-primary" @click="openNewUser" style="margin-bottom:8px;">＋ 创建用户</button>
+    <div class="card" v-for="u in users" :key="u.id" style="cursor:default;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <strong>{{u.display_name}}</strong>
+          <span style="font-size:12px;color:var(--text2);margin-left:8px;">{{u.username}} · {{u.role}}</span>
+          <div style="font-size:11px;color:var(--text2);" v-if="u.custom_fields&&u.custom_fields!='{}'">自定义权限</div>
+        </div>
+        <button class="btn btn-sm btn-outline" @click="deleteUser(u)" v-if="u.username!=='boss'">删除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 设置 ═══ -->
+  <div class="view" :class="{active:tab==='settings'}">
+    <div class="page-header">
+      <div><div class="page-title">系统设置</div><div class="page-subtitle">配置 AI、店铺信息，以及不同账号能看到和操作的范围。</div></div>
+    </div>
+    <div class="card" style="cursor:default;">
+      <div style="font-weight:600;margin-bottom:12px;">🤖 业务 AI 配置</div>
+      <div class="form-group"><label class="form-label">Provider</label>
+        <select class="form-select" v-model="settings.ai_provider" @change="saveSetting('ai_provider',settings.ai_provider)">
+          <option value="openai_compatible">OpenAI 兼容（OpenRouter / DeepSeek 等）</option>
+          <option value="anthropic">Anthropic Claude</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Base URL</label>
+        <input class="form-input" v-model.trim="settings.ai_base_url" @blur="saveSetting('ai_base_url',settings.ai_base_url)" placeholder="https://openrouter.ai/api/v1/chat/completions">
+      </div>
+      <div class="form-group"><label class="form-label">API Key</label>
+        <input class="form-input" v-model.trim="settings.ai_api_key" @blur="saveSetting('ai_api_key',settings.ai_api_key)" type="password" placeholder="sk-or-...">
+      </div>
+      <div class="form-group"><label class="form-label">模型</label>
+        <input class="form-input" v-model.trim="settings.ai_model" @blur="saveSetting('ai_model',settings.ai_model)" placeholder="openrouter/auto">
+      </div>
+      <button class="btn btn-outline" @click="testAI">测试 AI 连接</button>
+      <div class="form-group"><label class="form-label">店铺名称</label>
+        <input class="form-input" v-model.trim="settings.shop_name" @blur="saveSetting('shop_name',settings.shop_name);shopName=settings.shop_name">
+      </div>
+      <div class="form-group"><label class="form-label">默认利润率</label>
+        <input class="form-input" v-model.trim="settings.profit_rate" @blur="saveSetting('profit_rate',settings.profit_rate)" placeholder="0.10 = 10%">
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text2);text-align:center;padding:12px;">
+      填入 DeepSeek 或其他 OpenAI 兼容 API 后，AI 会基于当前订单摘要回答业务问题。
+    </div>
+    <div class="card" style="cursor:default;">
+      <div style="font-weight:600;margin-bottom:12px;">📣 企业微信通知</div>
+      <div class="form-group"><label class="form-label">群机器人 Webhook</label>
+        <input class="form-input" :value="settings.wecom_webhook_url||''" @change="saveSetting('wecom_webhook_url',$event.target.value)" placeholder="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=...">
+      </div>
+      <label class="perm-item" style="margin-bottom:10px;">
+        <input type="checkbox" :checked="settings.wecom_enabled!=='0'" @change="saveSetting('wecom_enabled',$event.target.checked?'1':'0')"> 启用群通知
+      </label>
+      <button class="btn btn-outline" @click="testWeCom">发送测试通知</button>
+      <div style="font-size:12px;color:var(--text2);margin-top:10px;line-height:1.6;">
+        适合演示：新订单、报价完成、状态变更、收款和售后会同步提醒到群里。Webhook 只保存在本机 demo 数据库里。
+      </div>
+    </div>
+    <div class="card" v-if="permissions.users" style="cursor:default;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div style="font-weight:600;">管理员与权限</div>
+        <button class="btn btn-sm btn-outline" @click="openNewUser">＋ 添加账号</button>
+      </div>
+      <div v-for="u in users" :key="u.id" style="padding:10px 0;border-top:1px solid #eee7dc;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <strong>{{u.display_name}}</strong>
+            <span style="font-size:12px;color:var(--text2);margin-left:8px;">{{u.username}} · {{u.role}}</span>
+            <div class="chip-row">
+              <span class="chip" v-for="p in visiblePermChips(u.permissions)" :key="p">{{p}}</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-sm btn-outline" @click="openUserEditor(u)">权限</button>
+            <button class="btn btn-sm btn-outline" @click="deleteUser(u)" v-if="u.username!=='boss'">删除</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 通知 ═══ -->
+  <div class="view" :class="{active:tab==='notifications'}">
+    <div class="page-header">
+      <div><div class="page-title">通知中心</div><div class="page-subtitle">查看订单、报价、收款和售后相关的系统提醒。</div></div>
+    </div>
+    <div class="notif-item" v-for="n in notifications" :key="n.id">
+      <div style="font-weight:600;font-size:12px;">{{n.title}}</div>
+      <div style="font-size:12px;color:var(--text2);">{{n.message}}</div>
+      <div style="font-size:10px;color:var(--text2);margin-top:2px;">{{n.sent_at}}</div>
+    </div>
+    <div v-if="notifications.length===0" style="text-align:center;padding:40px;color:var(--text2);">暂无通知</div>
+  </div>
+
+  <!-- ═══ AI 问答（所有角色可用）═══ -->
+  <div class="ai-panel" v-if="permissions.ai">
+    <div class="ai-title">AI 业务助手</div>
+    <div class="ai-subtitle">贯穿仪表盘、订单、客户和设置。可以直接问待办、报价、客户资料维护和微信跟进话术。</div>
+    <div class="ai-input-row">
+      <input class="ai-input" v-model="aiQ" @keyup.enter="askAI" placeholder="问 AI...">
+      <button class="ai-send" @click="askAI">→</button>
+    </div>
+    <div class="ai-answer" v-if="aiA" v-html="aiA.replace(/\n/g,'<br>')"></div>
+    <div class="ai-hints">
+      <button class="ai-hint" @click="quickAsk('还有哪些订单在等师傅报价？')">等报价</button>
+      <button class="ai-hint" @click="quickAsk('哪些报价我还没审核？')">待审核</button>
+      <button class="ai-hint" @click="quickAsk('今天老板最该处理哪三件事？')">今日重点</button>
+      <button class="ai-hint" @click="quickAsk('列出需要处理的事项')">待处理</button>
+      <button class="ai-hint" @click="quickAsk('帮我生成一段发给陈思雨的跟进微信话术')">跟进话术</button>
+      <button class="ai-hint" @click="quickAsk('最好的客户有哪些？')">客户排行</button>
+      <button class="ai-hint" @click="quickAsk(pageAskHint)">{{pageAskLabel}}</button>
+    </div>
+  </div>
+
+</template>
+
+<!-- ═══ 订单详情弹窗 ═══ -->
+<div class="modal-overlay" v-if="detailOrder" @click.self="detailOrder=null">
+  <div class="modal">
+    <button class="modal-close" @click="detailOrder=null">×</button>
+    <h3>{{detailOrder.order_number}} <span class="status-badge" :class="'status-'+detailOrder.status" :title="statusDescription(detailOrder.status)" @click.stop="showStatusTip(detailOrder.status)">{{statusLabel(detailOrder.status)}}</span></h3>
+    <img class="detail-img" :src="detailOrder.image_url||'/assets/ring-emerald.svg'">
+
+    <div class="field-grid">
+      <div class="field-pill" v-if="detailOrder.budget&&user.role!=='master'"><b>客户预算</b>¥{{detailOrder.budget.toLocaleString()}}</div>
+      <div class="field-pill" v-if="detailOrder.ring_size&&user.role!=='master'"><b>尺寸</b>{{detailOrder.ring_size}}</div>
+      <div class="field-pill" v-if="detailOrder.due_date&&user.role!=='master'"><b>交付日期</b>{{detailOrder.due_date}}</div>
+      <div class="field-pill" v-if="detailOrder.customer_source&&user.role!=='master'"><b>客户来源</b>{{detailOrder.customer_source}}</div>
+      <div class="field-pill" v-if="detailOrder.occasion&&user.role!=='master'"><b>用途</b>{{detailOrder.occasion}}</div>
+    </div>
+
+    <div v-if="user.role==='master'" style="margin-top:10px;background:var(--gold-light);border-radius:8px;padding:12px;font-size:13px;">
+      <div style="font-weight:700;margin-bottom:6px;">材料与用量</div>
+      <div v-for="m in materialList(detailOrder)" :key="m.name">{{m.name}}：{{m.quantity}}{{m.unit}}</div>
+      <div v-if="materialList(detailOrder).length===0" style="color:var(--text2);">暂无材料清单</div>
+      <div style="margin-top:8px;color:var(--text2);">报价状态：{{detailOrder.quote_items&&detailOrder.quote_items.length?'已填写成本':'未填写成本'}}</div>
+    </div>
+    <table v-if="user.role!=='master'" style="width:100%;font-size:13px;line-height:2;margin-top:8px;">
+      <tr v-if="detailOrder.customer_name"><td style="color:var(--text2);">客户</td><td><strong @click="showCustomer(detailOrder.customer_name);detailOrder=null" style="text-decoration:underline;cursor:pointer;">{{detailOrder.customer_name}}</strong></td></tr>
+      <tr><td style="color:var(--text2);">产品</td><td>{{detailOrder.metal_type||''}} {{detailOrder.product_type||''}}</td></tr>
+      <tr v-if="detailOrder.main_stone"><td style="color:var(--text2);">主石</td><td>{{detailOrder.main_stone}}</td></tr>
+      <tr v-if="detailOrder.side_stones"><td style="color:var(--text2);">辅石</td><td>{{detailOrder.side_stones}}</td></tr>
+      <tr v-if="detailOrder.design_brief"><td style="color:var(--text2);">设计方向</td><td>{{detailOrder.design_brief}}</td></tr>
+      <tr v-if="detailOrder.material_notes"><td style="color:var(--text2);">备注</td><td>{{detailOrder.material_notes}}</td></tr>
+      <tr v-if="detailOrder.special_notes"><td style="color:var(--text2);">特殊</td><td>{{detailOrder.special_notes}}</td></tr>
+      <tr v-if="detailOrder.follow_up_note&&user.role!=='master'"><td style="color:var(--text2);">跟进建议</td><td>{{detailOrder.follow_up_note}}</td></tr>
+    </table>
+    <button v-if="permissions.ai&&user.role!=='master'" class="btn btn-outline btn-sm" style="margin-top:8px;" @click="quickAsk(`基于${detailOrder.customer_name}这张${detailOrder.product_type}订单，帮我整理下一步处理建议和微信沟通话术。`)">让 AI 生成处理建议</button>
+
+    <!-- 报价明细 -->
+    <div v-if="(canSeeCost||permissions.quote)&&detailOrder.quote_items&&detailOrder.quote_items.length>0" style="margin-top:12px;background:var(--gold-light);padding:12px;border-radius:8px;">
+      <div style="font-weight:600;font-size:13px;margin-bottom:4px;">{{user.role==='master'?'已填写成本':'💰 报价明细'}}</div>
+      <table style="width:100%;font-size:13px;">
+        <tr v-for="it in detailOrder.quote_items"><td>{{it.item_name}} <small style="color:var(--text2);">{{it.quantity||1}}{{it.unit||''}} × ¥{{(it.unit_price||it.amount||0).toLocaleString()}}</small></td><td style="text-align:right;">¥{{it.amount.toLocaleString()}}</td></tr>
+        <tr v-if="user.role!=='master'" style="border-top:1px solid #ddd;font-weight:600;"><td>成本合计</td><td style="text-align:right;">¥{{(detailOrder.cost_total||0).toLocaleString()}}</td></tr>
+        <tr style="color:var(--green);" v-if="canSeeCost"><td>利润（{{detailOrder.profit_mode==='fixed'?'固定金额':(((detailOrder.profit_rate||0.1)*100).toFixed(0)+'%')}}）</td><td style="text-align:right;">¥{{(detailOrder.profit||0).toLocaleString()}}</td></tr>
+        <tr style="font-size:15px;font-weight:700;" v-if="canSeeFinal"><td>最终报价</td><td style="text-align:right;color:var(--gold-dark);">¥{{(detailOrder.final_price||0).toLocaleString()}}</td></tr>
+      </table>
+    </div>
+
+    <!-- 报价卡片按钮 -->
+    <button v-if="detailOrder.final_price>0&&canSeeFinal" class="btn btn-gold btn-sm" @click="showQuoteCard(detailOrder)" style="margin-top:8px;">📱 生成报价卡片</button>
+
+    <div v-if="permissions.price_edit" style="margin-top:12px;background:#fff7ed;padding:12px;border-radius:8px;">
+      <div style="font-weight:600;font-size:13px;margin-bottom:8px;">利润调整</div>
+      <div class="filter-grid" style="margin-bottom:8px;">
+        <div class="form-group"><label class="form-label">利润方式</label>
+          <select class="form-select" v-model="detailOrder.profit_mode">
+            <option value="percent">百分比利润</option>
+            <option value="fixed">固定数字利润</option>
+          </select>
+        </div>
+        <div class="form-group" v-if="(detailOrder.profit_mode||'percent')==='percent'"><label class="form-label">利润率（%）</label>
+          <input class="form-input" type="number" min="0" step="0.1" :value="((detailOrder.profit_rate||0)*100).toFixed(1)" @input="detailOrder.profit_rate=Number($event.target.value)/100">
+        </div>
+        <div class="form-group" v-if="detailOrder.profit_mode==='fixed'"><label class="form-label">固定利润金额</label>
+          <input class="form-input" type="number" min="0" v-model.number="detailOrder.profit_fixed">
+        </div>
+      </div>
+      <div class="field-grid">
+        <div class="field-pill"><b>成本合计</b>¥{{(detailOrder.cost_total||0).toLocaleString()}}</div>
+        <div class="field-pill"><b>当前利润</b>¥{{(detailOrder.profit||0).toLocaleString()}}</div>
+        <div class="field-pill"><b>当前报价</b>¥{{(detailOrder.final_price||0).toLocaleString()}}</div>
+        <div class="field-pill"><b>预计报价</b>¥{{projectedFinalPrice(detailOrder).toLocaleString()}}</div>
+      </div>
+      <button class="btn btn-outline btn-sm" style="margin-top:8px;" @click="saveOrderPrice(detailOrder)">保存利润设置</button>
+    </div>
+
+    <div v-if="user.role==='boss'||permissions.payment" style="margin-top:12px;background:#f8fafc;padding:12px;border-radius:8px;">
+      <div style="font-weight:600;font-size:13px;margin-bottom:8px;">💳 支付进度</div>
+      <div class="field-grid">
+        <div class="field-pill"><b>订单总价</b>¥{{(detailOrder.final_price||0).toLocaleString()}}</div>
+        <div class="field-pill"><b>已收合计</b>¥{{(detailOrder.paid_total||0).toLocaleString()}}</div>
+        <div class="field-pill"><b>剩余尾款</b>¥{{(detailOrder.balance_amount||0).toLocaleString()}}</div>
+        <div class="field-pill"><b>收款状态</b>{{detailOrder.is_paid?'已付清':'未付清'}}</div>
+      </div>
+      <table v-if="detailOrder.payment_records&&detailOrder.payment_records.length" style="width:100%;font-size:12px;margin-top:8px;line-height:1.8;">
+        <tr v-for="p in detailOrder.payment_records" :key="p.id">
+          <td>{{paymentLabel(p.category)}} ¥{{(p.amount||0).toLocaleString()}}</td>
+          <td>{{p.paid_at}}</td>
+          <td>{{p.submitted_by}}</td>
+          <td><button v-if="permissions.payment" class="btn btn-sm btn-outline" @click="deletePayment(detailOrder,p)">删除</button></td>
+        </tr>
+      </table>
+      <div v-else style="font-size:12px;color:var(--text2);margin-top:8px;">暂无收款记录</div>
+      <div v-if="permissions.payment" class="filter-grid" style="margin-top:8px;margin-bottom:0;">
+        <div class="form-group"><label class="form-label">收款类别</label><select class="form-select" v-model="paymentForm.category"><option value="deposit">定金</option><option value="partial">部分支付</option><option value="balance">尾款</option><option value="adjustment">调价补款</option></select></div>
+        <div class="form-group"><label class="form-label">收款金额</label><input class="form-input" v-model.number="paymentForm.amount" type="number"></div>
+        <div class="form-group"><label class="form-label">支付日期</label><input class="form-input" v-model="paymentForm.paid_at" type="date"></div>
+        <div class="form-group"><label class="form-label">备注</label><input class="form-input" v-model="paymentForm.note"></div>
+        <button class="btn btn-gold btn-sm" @click="addPayment(detailOrder)" style="grid-column:1/-1;">新增收款记录</button>
+      </div>
+      <div style="font-size:11px;color:var(--text2);margin-top:6px;">仪表盘选择“按付款完成日期”时，会使用这里的付清日期作为订单完成时间。</div>
+    </div>
+
+    <details class="status-flow" v-if="detailOrder.quote_change_requests&&detailOrder.quote_change_requests.length">
+      <summary>成本修改申请</summary>
+      <div class="flow-step" v-for="r in detailOrder.quote_change_requests" :key="r.id">
+        <b>{{r.status==='pending'?'待审批':(r.status==='approved'?'已批准':'已拒绝')}}</b>
+        <span>{{r.created_at}} · {{r.requested_by}}
+          <button v-if="user.role==='boss'&&r.status==='pending'" class="btn btn-sm btn-outline" @click="reviewQuoteChange(r,'approve')">批准并退回待报价</button>
+          <button v-if="user.role==='boss'&&r.status==='pending'" class="btn btn-sm btn-outline" @click="reviewQuoteChange(r,'reject')">拒绝</button>
+        </span>
+      </div>
+    </details>
+
+    <details class="status-flow" v-if="detailOrder.status_history&&detailOrder.status_history.length">
+      <summary>查看状态时间线</summary>
+      <div class="flow-step" v-for="h in detailOrder.status_history" :key="h.id">
+        <b>{{statusLabel(h.to_status)}}</b><span>{{h.changed_at}} · {{h.changed_by||'系统'}} {{h.note||''}}</span>
+      </div>
+    </details>
+
+    <details class="status-flow" v-if="detailOrder.status==='delivered'||(detailOrder.after_sales&&detailOrder.after_sales.length)">
+      <summary>售后记录</summary>
+      <div class="flow-step" v-for="a in detailOrder.after_sales||[]" :key="a.id">
+        <b>{{a.service_type}}</b><span>{{a.created_at}} · {{a.content}}</span>
+      </div>
+      <div v-if="canChangeStatus" style="margin-top:8px;">
+        <select class="form-select" v-model="afterSale.service_type"><option>维修</option><option>改圈</option><option>保养</option><option>客户不满意调整</option><option>其他</option></select>
+        <textarea class="form-textarea" v-model="afterSale.content" placeholder="记录售后内容，如：客户反馈戒圈略紧，安排改大半号。" style="margin-top:6px;"></textarea>
+        <button class="btn btn-gold" @click="saveAfterSale(detailOrder)">保存售后记录</button>
+      </div>
+    </details>
+
+    <!-- 状态操作 -->
+    <div v-if="canChangeStatus" style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap;">
+      <button v-if="detailOrder.status==='quoted'" class="btn btn-gold btn-sm" @click="updateOrderStatus(detailOrder,'reviewed')">✅ 审核通过</button>
+      <button v-if="detailOrder.status==='reviewed'" class="btn btn-gold btn-sm" @click="updateOrderStatus(detailOrder,'sent_to_client')">📤 标记已发客户</button>
+      <button v-if="detailOrder.status==='sent_to_client'" class="btn btn-gold btn-sm" @click="updateOrderStatus(detailOrder,'confirmed')">✅ 客户确认</button>
+      <button v-if="detailOrder.status==='confirmed'" class="btn btn-gold btn-sm" @click="updateOrderStatus(detailOrder,'in_production')">🔧 开始制作</button>
+      <button v-if="detailOrder.status==='in_production'" class="btn btn-gold btn-sm" @click="updateOrderStatus(detailOrder,'delivered')">🎉 已交付</button>
+    </div>
+    <div v-if="canChangeStatus" style="margin-top:10px;">
+      <label class="form-label">手动调整状态</label>
+      <select class="form-select" :value="detailOrder.status" @change="updateOrderStatus(detailOrder,$event.target.value)">
+        <option v-for="s in statusFlow" :key="s.key" :value="s.key">{{s.label}} - {{s.description}}</option>
+      </select>
+      <div style="font-size:11px;color:var(--text2);margin-top:5px;">“已发客户”表示已复制报价内容并通过微信等外部渠道发出，系统只记录进度，不直接发送微信。</div>
+    </div>
+    <button v-if="permissions.quote&&canSubmitQuote(detailOrder)" class="btn btn-gold" style="margin-top:8px;" @click="openQuoteForm(detailOrder)">{{['reviewed','sent_to_client','confirmed','in_production','delivered'].includes(detailOrder.status)?'提交成本修改申请':'填写/修改成本'}}</button>
+  </div>
+</div>
+
+<!-- ═══ 报价卡片弹窗 ═══ -->
+<div class="modal-overlay" v-if="quoteCardText" @click.self="quoteCardText=null">
+  <div class="modal">
+    <button class="modal-close" @click="quoteCardText=null">×</button>
+    <h3 style="margin-bottom:12px;">📱 客户报价单</h3>
+    <div class="quote-card">{{quoteCardText}}</div>
+    <button class="btn btn-gold" style="margin-top:12px;" @click="copyText(quoteCardText)">📋 复制到剪贴板</button>
+    <div style="font-size:11px;color:var(--text2);text-align:center;margin-top:6px;">复制后可粘贴到微信发给客户</div>
+  </div>
+</div>
+
+<!-- ═══ 新建订单弹窗 ═══ -->
+<div class="modal-overlay" v-if="showNewOrder" @click.self="showNewOrder=false">
+  <div class="modal">
+    <button class="modal-close" @click="showNewOrder=false">×</button>
+    <h3>📋 新建订单</h3>
+    <div class="form-group"><label class="form-label">客户名称</label><input class="form-input" v-model="nf.customer_name" placeholder="如：张明轩"></div>
+    <div class="form-group"><label class="form-label">产品类型</label><select class="form-select" v-model="nf.product_type"><option value="">请选择</option><option>戒指</option><option>项链</option><option>手镯</option><option>耳环</option><option>吊坠</option><option>手链</option><option>胸针</option></select></div>
+    <div class="form-group"><label class="form-label">金料</label><select class="form-select" v-model="nf.metal_type"><option value="">请选择</option><option>18K白金</option><option>18K黄金</option><option>18K玫瑰金</option><option>PT950铂金</option><option>14K金</option><option>925银</option></select></div>
+    <div class="form-group"><label class="form-label">材料清单</label>
+      <div v-for="(m,i) in materialRows" :key="i" style="display:grid;grid-template-columns:1fr 72px 70px;gap:6px;margin-bottom:6px;">
+        <select class="form-select" v-model="m.name"><option v-for="opt in materialOptions.all">{{opt}}</option></select>
+        <input class="form-input" v-model.number="m.quantity" type="number" step="0.01" placeholder="用量">
+        <select class="form-select" v-model="m.unit"><option v-for="u in materialOptions.unit">{{u}}</option></select>
+        <input v-if="m.name==='其他'" class="form-input" v-model="m.custom" placeholder="自定义材料名" style="grid-column:1/-1;">
+      </div>
+      <button class="btn btn-outline btn-sm" @click="materialRows.push({name:'钻石',custom:'',quantity:1,unit:'颗'})">＋ 添加材料</button>
+    </div>
+    <div class="form-group"><label class="form-label">客户预算</label><input class="form-input" v-model.number="nf.budget" type="number" placeholder="如：38000"></div>
+    <div class="form-group"><label class="form-label">尺寸/手寸</label><input class="form-input" v-model="nf.ring_size" placeholder="如：港码 13"></div>
+    <div class="form-group"><label class="form-label">交付日期</label><input class="form-input" v-model="nf.due_date" type="date"></div>
+    <div class="form-group"><label class="form-label">客户来源</label><select class="form-select" v-model="nf.customer_source"><option value="">请选择</option><option>微信老客群</option><option>小红书私信</option><option>朋友转介绍</option><option>线下到店</option></select></div>
+    <div class="form-group"><label class="form-label">用途</label><input class="form-input" v-model="nf.occasion" placeholder="如：求婚、生日礼物、纪念日"></div>
+    <div class="form-group"><label class="form-label">参考图</label><select class="form-select" v-model="nf.image_url"><option value="">默认</option><option value="/assets/ring-emerald.svg">祖母绿戒指</option><option value="/assets/ring-vintage.svg">复古戒指</option><option value="/assets/pendant-jade.svg">翡翠吊坠</option><option value="/assets/earrings-pearl.svg">珍珠耳环</option></select></div>
+    <div class="form-group"><label class="form-label">上传参考图</label><input class="form-input" type="file" accept="image/*" @change="handleImageUpload"></div>
+    <div class="form-group"><label class="form-label">设计方向</label><input class="form-input" v-model="nf.design_brief" placeholder="如：复古、低调、适合日常佩戴"></div>
+    <div class="form-group"><label class="form-label">备注</label><textarea class="form-textarea" v-model="nf.material_notes"></textarea></div>
+    <div class="form-group"><label class="form-label">特殊要求</label><input class="form-input" v-model="nf.special_notes"></div>
+    <div class="form-group"><label class="form-label">跟进建议</label><input class="form-input" v-model="nf.follow_up_note" placeholder="如：今晚 8 点前给客户方案"></div>
+    <button class="btn btn-gold" @click="createOrder">提交订单</button>
+  </div>
+</div>
+
+<!-- ═══ 报价表单弹窗 ═══ -->
+<div class="modal-overlay" v-if="quoteOrder" @click.self="quoteOrder=null">
+  <div class="modal">
+    <button class="modal-close" @click="quoteOrder=null">×</button>
+    <h3>💰 填写报价 — {{quoteOrder.order_number}}</h3>
+    <div v-for="(it,i) in qi" :key="i" style="display:grid;grid-template-columns:1fr 64px 56px 88px;gap:6px;margin-bottom:6px;">
+      <input class="form-input" v-model="it.item_name" placeholder="项目" style="flex:1;">
+      <input class="form-input" v-model.number="it.quantity" placeholder="数量" type="number" step="0.01">
+      <input class="form-input" v-model="it.unit" placeholder="单位">
+      <input class="form-input" v-model.number="it.unit_price" placeholder="单价" type="number">
+      <button @click="qi.splice(i,1)" style="grid-column:1/-1;border:none;background:none;color:var(--red);cursor:pointer;font-size:13px;text-align:left;">删除此项</button>
+    </div>
+    <button class="btn btn-outline btn-sm" @click="qi.push({item_name:'',quantity:1,unit:'件',unit_price:0})" style="margin-bottom:10px;">＋ 添加</button>
+    <div style="background:var(--gold-light);padding:8px;border-radius:8px;margin-bottom:10px;font-weight:600;">
+      合计：¥{{quoteTotal.toLocaleString()}}
+    </div>
+    <button class="btn btn-gold" @click="submitQuote">提交报价</button>
+  </div>
+</div>
+
+<!-- ═══ 用户权限弹窗 ═══ -->
+<div class="modal-overlay" v-if="showNewUser" @click.self="showNewUser=false">
+  <div class="modal">
+    <button class="modal-close" @click="showNewUser=false">×</button>
+    <h3>👤 {{editingUser?'编辑账号权限':'创建用户'}}</h3>
+    <div class="form-group"><label class="form-label">用户名</label><input class="form-input" v-model="nu.username" placeholder="登录用" :disabled="!!editingUser"></div>
+    <div class="form-group"><label class="form-label">密码</label><input class="form-input" v-model="nu.password" type="password" :placeholder="editingUser?'留空则不修改密码':''"></div>
+    <div class="form-group"><label class="form-label">显示名</label><input class="form-input" v-model="nu.display_name" placeholder="如：小助理"></div>
+    <div class="form-group"><label class="form-label">角色</label>
+      <select class="form-select" v-model="nu.role" @change="applyRoleTemplate">
+        <option value="boss">老板（全部权限）</option>
+        <option value="assistant">助理（看最终价、不能看成本）</option>
+        <option value="master">师傅（看材料、填报价）</option>
+        <option value="custom">自定义权限</option>
+      </select>
+    </div>
+    <div class="form-group" v-if="nu.role==='custom'">
+      <label class="form-label">可见字段（逗号分隔）</label>
+      <textarea class="form-textarea" v-model="nu.custom_fields_text" placeholder="id,order_number,customer_name,status,final_price"></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">功能权限</label>
+      <div v-for="group in permissionGroups" :key="group.title" style="margin-bottom:12px;">
+        <div style="font-size:12px;font-weight:800;color:var(--gold-dark);margin-bottom:6px;">{{group.title}}</div>
+        <div class="perm-grid">
+          <label class="perm-item" v-for="p in group.items" :key="p.key"><input type="checkbox" v-model="nu.permissions[p.key]"> {{p.label}}</label>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-gold" @click="editingUser?saveUser():createUser()">{{editingUser?'保存权限':'创建'}}</button>
+  </div>
+</div>
+
+<!-- ═══ 客户详情弹窗 ═══ -->
+<div class="modal-overlay" v-if="custDetail" @click.self="custDetail=null">
+  <div class="modal">
+    <button class="modal-close" @click="custDetail=null">×</button>
+    <h3>👤 {{custDetail.name}} {{custDetail.is_vip?'👑':''}}</h3>
+    <div class="cust-stats" style="margin:12px 0;">
+      <div><div class="val">{{custDetail.total_orders}}</div><small>总订单</small></div>
+      <div><div class="val">¥{{custDetail.total_spent.toLocaleString()}}</div><small>总消费</small></div>
+      <div><div class="val">¥{{custDetail.avg_order.toLocaleString()}}</div><small>均价</small></div>
+    </div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:8px;">
+      首单：{{custDetail.first_order?.substring(0,10)}} | 最近：{{custDetail.last_order?.substring(0,10)}}
+    </div>
+    <div class="card" style="cursor:default;">
+      <div style="font-weight:700;margin-bottom:8px;">客户资料</div>
+      <div v-if="user.role==='boss'" class="filter-grid">
+        <div class="form-group"><label class="form-label">年龄</label><input class="form-input" v-model="custEdit.age" inputmode="numeric"></div>
+        <div class="form-group"><label class="form-label">性别</label><select class="form-select" v-model="custEdit.gender"><option value="">未填写</option><option>女</option><option>男</option><option>其他</option></select></div>
+        <div class="form-group"><label class="form-label">联系电话</label><input class="form-input" v-model="custEdit.phone" inputmode="tel"></div>
+        <div class="form-group"><label class="form-label">微信号</label><input class="form-input" v-model="custEdit.wechat"></div>
+        <div class="form-group"><label class="form-label">居住城市</label><input class="form-input" v-model="custEdit.city"></div>
+        <div class="form-group"><label class="form-label">出生日期</label><input class="form-input" v-model="custEdit.birthday" type="date"></div>
+        <div class="form-group"><label class="form-label">详细住址</label><input class="form-input" v-model="custEdit.address"></div>
+        <div class="form-group"><label class="form-label">购买喜好</label><input class="form-input" v-model="custEdit.preferences"></div>
+        <div class="form-group" style="grid-column:1/-1;"><label class="form-label">维护备注</label><textarea class="form-textarea" v-model="custEdit.notes"></textarea></div>
+        <button class="btn btn-gold" @click="saveCustomerProfile" style="grid-column:1/-1;">保存客户资料</button>
+      </div>
+      <div v-else style="font-size:12px;line-height:1.8;">
+        <div>年龄：{{custDetail.profile?.age||'-'}}　性别：{{custDetail.profile?.gender||'-'}}</div>
+        <div>城市：{{custDetail.profile?.city||'-'}}</div>
+        <div>联系方式：{{custDetail.profile?.phone||'-'}}</div>
+        <div>微信：{{custDetail.profile?.wechat||'-'}}　生日：{{custDetail.profile?.birthday||'-'}}</div>
+        <div>地址：{{custDetail.profile?.address||'-'}}</div>
+        <div>喜好：{{custDetail.profile?.preferences||'-'}}</div>
+      </div>
+    </div>
+    <div v-if="custDetail.products" style="font-size:12px;margin-bottom:8px;">
+      <span v-for="(c,t) in custDetail.products" style="margin-right:8px;background:var(--gold-light);padding:2px 8px;border-radius:10px;">{{t}} ×{{c}}</span>
+    </div>
+    <button v-if="permissions.ai" class="btn btn-outline btn-sm" style="margin-bottom:8px;" @click="quickAsk(`帮我分析${custDetail.name}这个客户的历史订单、喜好和下一步维护建议。`)">让 AI 分析客户</button>
+    <div class="card" v-for="o in custDetail.orders" :key="o.id" style="font-size:12px;" @click="openOrder(o);custDetail=null">
+      {{o.created_at?.substring(0,10)}} | {{o.product_type}} | ¥{{(o.final_price||0).toLocaleString()}} | {{statusLabel(o.status)}}
+    </div>
+  </div>
+</div>
+
+</div></div>
+
+<script>
+const {createApp} = Vue;
+createApp({
+  data(){return{
+    // Auth
+    user:null, token:null, loginForm:{username:'',password:''}, loginError:'',
+    shopName:'珠宝定制工作室',
+    // Nav
+    tab:'dashboard',
+    // Data
+    orders:[], stats:{}, customers:[], users:[], notifications:[], settings:{}, statusFlow:[],
+    dashboardPeriod:'month', dashboardBasis:'created', orderFilterStatus:'', orderMetric:'', orderListTitle:'', orderUseDashboardPeriod:false,
+    chartDays:180, chartRanges:[{days:90,label:'90天'},{days:180,label:'半年'},{days:365,label:'一年'},{days:730,label:'两年'}],
+    orderFilters:{amount_min:'',amount_max:'',date_from:'',date_to:'',source:'',payment_status:''},
+    customerFilters:{keyword:'',vip:'',min_spent:'',recent:''},
+    periods:[{key:'today',label:'本日'},{key:'week',label:'本周'},{key:'month',label:'本月'},{key:'year',label:'本年'}],
+    // Modals
+    detailOrder:null, showNewOrder:false, nf:{customer_name:'',product_type:'',metal_type:'',main_stone:'',side_stones:'',budget:0,ring_size:'',due_date:'',customer_source:'',occasion:'',design_brief:'',image_url:'',material_notes:'',special_notes:'',follow_up_note:''},
+    quoteOrder:null, qi:[{item_name:'裸石',amount:0},{item_name:'戒托',amount:0},{item_name:'碎钻',amount:0},{item_name:'工费',amount:0}],
+    showNewUser:false, editingUser:null, nu:{username:'',password:'',display_name:'',role:'assistant',custom_fields_text:'',permissions:{}},
+    permissionGroups:[
+      {title:'经营与 AI',items:[{key:'ai',label:'AI 问答'},{key:'ai_config',label:'AI 配置'},{key:'dashboard_finance',label:'经营金额卡片'},{key:'dashboard_charts',label:'经营趋势图表'},{key:'notifications',label:'通知中心'}]},
+      {title:'订单流程',items:[{key:'orders_create',label:'新建订单'},{key:'orders_edit',label:'编辑订单资料'},{key:'status',label:'修改订单状态'},{key:'quote',label:'填写/修改成本报价'},{key:'price_edit',label:'修改利润/最终价'}]},
+      {title:'金额与客户',items:[{key:'cost',label:'查看成本/利润'},{key:'final_price',label:'查看对客报价'},{key:'payment',label:'维护收款记录'},{key:'customers',label:'客户列表/画像'},{key:'customer_sensitive',label:'客户敏感资料'},{key:'after_sale',label:'维护售后记录'}]},
+      {title:'系统管理',items:[{key:'users',label:'账号与权限管理'},{key:'settings',label:'系统设置'}]}
+    ],
+    materialOptions:{
+      all:['祖母绿宝石','钻石','蓝宝石','红宝石','翡翠','珍珠','人工钻','碎钻','梯钻','18K白金','18K黄金','18K玫瑰金','PT950铂金','其他'],
+      unit:['克拉','颗','克','件','对']
+    },
+    materialRows:[{name:'祖母绿宝石',custom:'',quantity:1.2,unit:'克拉'},{name:'18K白金',custom:'',quantity:1,unit:'件'}],
+    materialForm:{main_name:'祖母绿宝石',main_custom:'',main_qty:1.2,main_unit:'克拉',side_name:'碎钻',side_custom:'',side_qty:6,side_unit:'颗',other:''},
+    quoteCardText:null, custDetail:null,
+    custEdit:{}, afterSale:{service_type:'维修',content:''}, paymentForm:{category:'deposit',amount:0,paid_at:'',note:''},
+    // AI
+    aiQ:'', aiA:'',
+    // Toast
+    toast:'', statusTip:null, chartTip:null, chartHoverTip:null,
+  }},
+  computed:{
+    roleName(){const m={boss:'老板',assistant:'助理',master:'师傅',custom:'自定义'};return m[this.user?.role]||this.user?.role;},
+    permissions(){
+      let p={...this.permissionTemplate(this.user?.role||'assistant')};
+      try{Object.assign(p, JSON.parse(this.user?.custom_fields||'{}').permissions||{});}catch(e){}
+      return p;
+    },
+    canSeeCost(){return !!this.permissions.cost;},
+    canSeeFinal(){return !!this.permissions.final_price||!!this.permissions.cost;},
+    canChangeStatus(){return !!this.permissions.status;},
+    periodLabel(){return ({today:'今日',week:'本周',month:'本月',year:'本年'}[this.dashboardPeriod]||'本期');},
+    dashboardBasisLabel(){return this.dashboardBasis==='completed'?'付款日期':'订单创建日期';},
+    chartOrders(){return this.stats.chart_data?.orders||[];},
+    chartFinance(){return this.stats.chart_data?.finance||[];},
+    chartLabel(){
+      const g=this.stats.chart_data?.granularity;
+      return g==='month'?'按月汇总':(g==='week'?'按周汇总':'按日汇总');
+    },
+    orderMax(){return Math.max(1,...this.chartOrders.map(x=>Number(x.value)||0));},
+    financeMax(){
+      const vals=this.chartFinance.flatMap(x=>[Number(x.revenue)||0,Number(x.profit)||0]);
+      return Math.max(1,...vals);
+    },
+    financeBars(){
+      const data=this.chartFinance;
+      const n=Math.max(1,data.length);
+      const span=648/n;
+      const w=Math.max(5, Math.min(18, span*.28));
+      return data.map((p,i)=>{
+        const cx=76+span*i+span/2;
+        const revenue=Number(p.revenue)||0;
+        const profit=Number(p.profit)||0;
+        const rh=this.chartBarHeight(revenue,this.financeMax);
+        const ph=this.chartBarHeight(profit,this.financeMax);
+        return {label:p.label,cx,width:w,revenueValue:revenue,profitValue:profit,profitRate:this.profitRate(profit,revenue),revenue:{x:cx-w-1,y:214-rh,h:rh},profit:{x:cx+1,y:214-ph,h:ph}};
+      });
+    },
+    pageAskLabel(){
+      return {dashboard:'问本页重点',orders:'问订单处理',customers:'问客户维护',settings:'问配置建议',notifications:'问通知摘要'}[this.tab]||'问当前页面';
+    },
+    pageAskHint(){
+      return {
+        dashboard:'根据仪表盘，今天老板最该先处理哪三件事？',
+        orders:'根据当前订单列表，哪些订单最需要推进？',
+        customers:'根据客户列表，哪些客户最值得优先维护？',
+        settings:'这个系统的权限和 AI 配置应该怎么给老板演示？',
+        notifications:'帮我整理当前通知里需要处理的事项。'
+      }[this.tab]||'帮我总结当前页面要处理的事项。';
+    },
+    filteredCustomers(){
+      const now=Date.now();
+      return this.customers.filter(c=>{
+        if(this.customerFilters.keyword && !c.name.includes(this.customerFilters.keyword))return false;
+        if(this.customerFilters.vip==='vip' && !c.is_vip)return false;
+        if(this.customerFilters.vip==='regular' && c.is_vip)return false;
+        if(this.customerFilters.min_spent && c.total_spent < this.customerFilters.min_spent)return false;
+        if(this.customerFilters.recent && c.last_order){
+          const days=(now-new Date(c.last_order).getTime())/86400000;
+          if(days>Number(this.customerFilters.recent))return false;
+        }
+        return true;
+      });
+    },
+    quoteTotal(){return Math.round(this.qi.reduce((s,i)=>s+((Number(i.quantity)||0)*(Number(i.unit_price)||0)),0));},
+    kanbanCols(){
+      const cols=[
+        {status:'pending_quote',label:'🟡 待报价'},{status:'quoted',label:'🟠 待审核'},
+        {status:'reviewed',label:'🟢 待发送'},{status:'sent_to_client',label:'📤 等客户'},
+        {status:'confirmed',label:'✅ 待制作'},{status:'in_production',label:'🔧 制作中'},
+      ];
+      return cols.map(c=>({...c,orders:this.orders.filter(o=>o.status===c.status)})).filter(c=>c.orders.length>0);
+    },
+  },
+  methods:{
+    permissionTemplate(role='assistant'){
+      const all={ai:true,ai_config:true,dashboard_finance:true,dashboard_charts:true,cost:true,final_price:true,customers:true,customer_sensitive:true,users:true,settings:true,orders_create:true,orders_edit:true,status:true,quote:true,payment:true,price_edit:true,after_sale:true,notifications:true};
+      const none={ai:false,ai_config:false,dashboard_finance:false,dashboard_charts:false,cost:false,final_price:false,customers:false,customer_sensitive:false,users:false,settings:false,orders_create:false,orders_edit:false,status:false,quote:false,payment:false,price_edit:false,after_sale:false,notifications:true};
+      const templates={
+        boss:{...all},
+        assistant:{...none,ai:true,final_price:true,orders_create:true,orders_edit:true,after_sale:true,notifications:true},
+        master:{...none,quote:true,notifications:true},
+        custom:{...none,ai:true,final_price:true,notifications:true}
+      };
+      return templates[role]||templates.assistant;
+    },
+    visiblePermChips(perms={}){
+      const labels={ai:'AI',dashboard_charts:'图表',cost:'成本',final_price:'报价',orders_create:'新建',orders_edit:'编辑',status:'改状态',quote:'成本报价',payment:'收款',price_edit:'改利润',customers:'客户',customer_sensitive:'敏感资料',users:'账号',settings:'设置'};
+      return Object.keys(labels).filter(k=>perms&&perms[k]).map(k=>labels[k]).slice(0,8);
+    },
+    statusLabel(s){return {draft:'草稿',pending_quote:'待报价',quoting:'报价中',quoted:'已报价',reviewed:'已审核',sent_to_client:'已发客户',confirmed:'已确认',in_production:'制作中',delivered:'已交付'}[s]||s;},
+    statusDescription(s){
+      const found=this.statusFlow.find(x=>x.key===s);
+      if(found)return found.description;
+      return {draft:'内部草稿，需求还没整理完整。',pending_quote:'等待师傅核算材料、工费和成本明细。',quoting:'师傅正在报价或补充成本明细。',quoted:'师傅已提交成本，等待老板审核利润和对客报价。',reviewed:'老板已审核，可以生成报价卡并发给客户。',sent_to_client:'已通过微信等外部渠道发给客户，等待确认。',confirmed:'客户已确认方案或价格，准备进入制作排期。',in_production:'订单已进入制作或采购材料阶段。',delivered:'订单已交付完成，可进入复购和售后维护。'}[s]||'订单流程节点。';
+    },
+    showStatusTip(s){
+      this.statusTip={label:this.statusLabel(s),description:this.statusDescription(s)};
+    },
+    profitRate(profit,revenue){
+      revenue=Number(revenue)||0;
+      if(!revenue)return '0.0%';
+      return ((Number(profit||0)/revenue)*100).toFixed(1)+'%';
+    },
+    chartBarTitle(b,type){
+      if(type==='profit'){
+        return `${this.formatChartLabel(b.label)} 利润 ${this.formatMoneyFull(b.profitValue)}，利润率 ${b.profitRate}`;
+      }
+      return `${this.formatChartLabel(b.label)} 营收 ${this.formatMoneyFull(b.revenueValue)}`;
+    },
+    showChartTip(b,type){
+      this.chartHoverTip=null;
+      this.chartTip=type==='profit'
+        ? {title:`${this.formatChartLabel(b.label)} 利润`,lines:[`利润：${this.formatMoneyFull(b.profitValue)}`,`营收：${this.formatMoneyFull(b.revenueValue)}`,`利润率：${b.profitRate}`]}
+        : {title:`${this.formatChartLabel(b.label)} 营收`,lines:[`营收：${this.formatMoneyFull(b.revenueValue)}`,`利润：${this.formatMoneyFull(b.profitValue)}`]};
+    },
+    showChartHover(e,b,type){
+      const tip=type==='profit'
+        ? {title:`${this.formatChartLabel(b.label)} 利润`,lines:[`利润：${this.formatMoneyFull(b.profitValue)}`,`营收：${this.formatMoneyFull(b.revenueValue)}`,`利润率：${b.profitRate}`]}
+        : {title:`${this.formatChartLabel(b.label)} 营收`,lines:[`营收：${this.formatMoneyFull(b.revenueValue)}`,`利润：${this.formatMoneyFull(b.profitValue)}`]};
+      this.chartHoverTip={...tip,x:Math.max(8,Math.min(e.clientX+14,window.innerWidth-190)),y:Math.max(12,e.clientY-14)};
+    },
+    paymentLabel(s){return {deposit:'定金',partial:'部分支付',balance:'尾款',adjustment:'调价补款'}[s]||s;},
+    projectedFinalPrice(o){
+      if(!o)return 0;
+      const cost=Number(o.cost_total)||0;
+      const profit=o.profit_mode==='fixed' ? (Number(o.profit_fixed)||0) : cost*(Number(o.profit_rate)||0);
+      return Math.round(cost+profit);
+    },
+    orderSubtitle(o){
+      if(this.user?.role==='master'){
+        const materials=this.materialList(o).map(m=>`${m.name}${m.quantity||''}${m.unit||''}`).join('，');
+        return materials || (o.quote_items?.length?'已填写成本':'待填写成本');
+      }
+      return `${o.customer_name||''} ${o.product_type||''} ${o.main_stone||o.metal_type||''}`.trim();
+    },
+    materialList(o){
+      let specs={};
+      try{specs=typeof o.material_specs==='string'?JSON.parse(o.material_specs||'{}'):(o.material_specs||{});}catch(e){}
+      return specs.materials||[];
+    },
+    chartPoints(series,maxValue){
+      const values=(series||[]).map(x=>Number(x.value)||0);
+      const max=Math.max(1,maxValue||Math.max(1,...values));
+      const n=Math.max(1,values.length-1);
+      return values.map((v,i)=>({x:64+(660*i/n),y:214-(176*v/max),value:v,label:(series[i]||{}).label}));
+    },
+    chartKeyPoints(series,maxValue){
+      const pts=this.chartPoints(series,maxValue);
+      if(pts.length<=14)return pts;
+      const step=Math.ceil(pts.length/10);
+      return pts.filter((p,i)=>i===0||i===pts.length-1||p.value>0&&i%step===0);
+    },
+    linePath(series,maxValue){
+      const pts=this.chartPoints(series,maxValue);
+      if(!pts.length)return '';
+      return pts.map((p,i)=>(i?'L':'M')+p.x.toFixed(1)+' '+p.y.toFixed(1)).join(' ');
+    },
+    areaPath(series,maxValue){
+      const pts=this.chartPoints(series,maxValue);
+      if(!pts.length)return '';
+      return this.linePath(series,maxValue)+' L '+pts[pts.length-1].x.toFixed(1)+' 214 L '+pts[0].x.toFixed(1)+' 214 Z';
+    },
+    chartBarHeight(v,max){
+      return Math.max(3, Math.round((Number(v)||0)/Math.max(1,max)*176));
+    },
+    yTicks(max){
+      const top=this.niceMax(max);
+      return [0,.25,.5,.75,1].map(r=>({value:Math.round(top*r),y:214-(176*r)})).reverse();
+    },
+    niceMax(max){
+      max=Math.max(1,Number(max)||1);
+      const pow=Math.pow(10,Math.floor(Math.log10(max)));
+      const n=max/pow;
+      const nice=n<=2?2:n<=5?5:10;
+      return nice*pow;
+    },
+    xTicks(series){
+      const pts=this.chartPoints(series,1);
+      if(!pts.length)return [];
+      const step=Math.max(1,Math.ceil(pts.length/6));
+      return pts.filter((p,i)=>i===0||i===pts.length-1||i%step===0);
+    },
+    formatChartLabel(label){
+      if(!label)return '';
+      if(label.length===10)return label.slice(5).replace('-','/');
+      if(label.length===7)return label.replace('-','/');
+      return label.slice(5).replace('-','/');
+    },
+    formatMoneyShort(v){
+      v=Number(v)||0;
+      if(Math.abs(v)>=10000)return '¥'+(v/10000).toFixed(v>=100000?0:1)+'万';
+      return '¥'+Math.round(v).toLocaleString();
+    },
+    formatMoneyFull(v){
+      return '¥'+Math.round(Number(v)||0).toLocaleString();
+    },
+    canSubmitQuote(o){
+      if(!o)return false;
+      if(this.user?.role==='master')return ['pending_quote','quoting','quoted','reviewed','sent_to_client','confirmed','in_production','delivered'].includes(o.status);
+      return ['pending_quote','quoting','quoted'].includes(o.status);
+    },
+
+    async api(path,opt={}){
+      const headers={'Content-Type':'application/json',...opt.headers};
+      if(this.token) headers['Authorization']='Bearer '+this.token;
+      const res=await fetch('/api'+path,{headers,...opt});
+      if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.detail||'Error');}
+      return res.json();
+    },
+
+    // Auth
+    async login(){
+      this.loginError='';
+      try{
+        const r=await this.api('/auth/login',{method:'POST',body:JSON.stringify(this.loginForm)});
+        this.token=r.token; this.user=r.user; this.shopName='珠宝定制工作室';
+        if(this.user.role==='master')this.tab='dashboard';
+        await this.loadAll();
+      }catch(e){this.loginError=e.message;}
+    },
+    logout(){this.user=null;this.token=null;},
+
+    async loadAll(){
+      await Promise.all([this.loadStatusFlow(),this.loadOrders(),this.loadStats()]);
+      if(this.permissions.settings){this.loadSettings();}
+    },
+    async loadOrders(){
+      const params=new URLSearchParams({username:this.user.username});
+      if(this.orderFilterStatus)params.set('status',this.orderFilterStatus);
+      if(this.orderUseDashboardPeriod&&this.dashboardPeriod)params.set('period',this.dashboardPeriod);
+      params.set('basis',this.dashboardBasis);
+      if(this.orderMetric)params.set('metric',this.orderMetric);
+      Object.entries(this.orderFilters).forEach(([k,v])=>{if(v)params.set(k,v);});
+      try{this.orders=(await this.api('/orders?'+params.toString())).orders;}catch(e){}
+    },
+    async loadStats(){
+      try{this.stats=await this.api(`/stats?username=${this.user.username}&period=${this.dashboardPeriod}&basis=${this.dashboardBasis}&trend_days=${this.chartDays}`);}catch(e){}
+    },
+    async loadStatusFlow(){
+      if(this.statusFlow.length)return;
+      try{this.statusFlow=await this.api('/status-flow');}catch(e){}
+    },
+    async loadCustomers(){
+      try{this.customers=await this.api('/customers');}catch(e){}
+    },
+    async loadUsers(){
+      try{this.users=await this.api('/users');}catch(e){}
+    },
+    async loadNotifications(){
+      try{this.notifications=await this.api('/notifications');}catch(e){}
+    },
+    async loadSettings(){
+      try{
+        const s=await this.api('/settings');
+        this.settings={
+          ai_provider:'openai_compatible',
+          ai_base_url:'https://openrouter.ai/api/v1/chat/completions',
+          ai_api_key:'',
+          ai_model:'openrouter/auto',
+          shop_name:'珠宝定制工作室',
+          profit_rate:'0.10',
+          wecom_enabled:'1',
+          ...s
+        };
+        this.shopName=this.settings.shop_name||'珠宝定制工作室';
+        if(this.permissions.users)this.loadUsers();
+      }catch(e){}
+    },
+
+    // Orders
+    async openOrder(o){
+      try{
+        this.detailOrder=await this.api(`/orders/${o.id}?username=${this.user.username}`);
+        this.detailOrder.profit_mode=this.detailOrder.profit_mode||'percent';
+        this.detailOrder.profit_fixed=Number(this.detailOrder.profit_fixed)||0;
+        this.paymentForm={category:'deposit',amount:0,paid_at:new Date().toISOString().slice(0,10),note:''};
+      }catch(e){this.detailOrder=o;}
+    },
+    async createOrder(){
+      if(!this.nf.customer_name){this.toastMsg('请填客户名');return;}
+      this.applyMaterialToOrder();
+      try{
+        await this.api('/orders?username='+this.user.username,{method:'POST',body:JSON.stringify(this.nf)});
+        this.showNewOrder=false; this.toastMsg('✅ 订单已创建');
+        this.nf={customer_name:'',product_type:'',metal_type:'',main_stone:'',side_stones:'',budget:0,ring_size:'',due_date:'',customer_source:'',occasion:'',design_brief:'',image_url:'',material_notes:'',special_notes:'',follow_up_note:''};
+        this.materialRows=[{name:'祖母绿宝石',custom:'',quantity:1.2,unit:'克拉'},{name:'18K白金',custom:'',quantity:1,unit:'件'}];
+        await this.loadAll();
+      }catch(e){this.toastMsg('失败：'+e.message);}
+    },
+    applyMaterialToOrder(){
+      const materials=this.materialRows.map(m=>({name:m.name==='其他'?m.custom:m.name,quantity:m.quantity,unit:m.unit})).filter(m=>m.name&&m.quantity);
+      this.nf.main_stone=materials[0]?`${materials[0].name} ${materials[0].quantity}${materials[0].unit}`:'';
+      this.nf.side_stones=materials.slice(1).map(m=>`${m.name} ${m.quantity}${m.unit}`).join('，');
+      this.nf.material_specs={materials};
+    },
+    handleImageUpload(e){
+      const file=e.target.files?.[0]; if(!file)return;
+      const reader=new FileReader();
+      reader.onload=()=>{this.nf.image_url=reader.result;this.toastMsg('参考图已载入');};
+      reader.readAsDataURL(file);
+    },
+    async updateOrderStatus(o,s){
+      try{await this.api(`/orders/${o.id}/status?username=${this.user.username}`,{method:'PUT',body:JSON.stringify({status:s})});this.detailOrder=null;this.toastMsg('✅ 状态已更新');await this.loadAll();}catch(e){this.toastMsg('失败');}
+    },
+    async saveOrderPrice(o){
+      const body={profit_mode:o.profit_mode||'percent',profit_rate:Number(o.profit_rate)||0,profit_fixed:Number(o.profit_fixed)||0};
+      try{
+        await this.api(`/orders/${o.id}?username=${this.user.username}`,{method:'PUT',body:JSON.stringify(body)});
+        this.toastMsg('利润设置已保存');
+        await this.openOrder(o);
+        await this.loadOrders();
+        await this.loadStats();
+      }catch(e){this.toastMsg('保存失败：'+e.message);}
+    },
+    async addPayment(o){
+      if(!this.paymentForm.amount||this.paymentForm.amount<=0){this.toastMsg('请填写收款金额');return;}
+      try{
+        await this.api(`/orders/${o.id}/payments?username=${this.user.username}`,{method:'POST',body:JSON.stringify(this.paymentForm)});
+        this.toastMsg('收款记录已保存');
+        await this.openOrder(o); await this.loadOrders(); await this.loadStats();
+      }catch(e){this.toastMsg('保存失败：'+e.message);}
+    },
+    async deletePayment(o,p){
+      if(!confirm('删除这笔收款记录？'))return;
+      try{
+        await this.api(`/orders/${o.id}/payments/${p.id}?username=${this.user.username}`,{method:'DELETE'});
+        this.toastMsg('收款记录已删除');
+        await this.openOrder(o); await this.loadOrders(); await this.loadStats();
+      }catch(e){this.toastMsg('删除失败：'+e.message);}
+    },
+    async reviewQuoteChange(r,action){
+      try{
+        await this.api(`/quote-change-requests/${r.id}/review?username=${this.user.username}`,{method:'POST',body:JSON.stringify({action})});
+        this.toastMsg(action==='approve'?'已批准并退回待报价':'已拒绝申请');
+        await this.openOrder(this.detailOrder); await this.loadOrders(); await this.loadStats();
+      }catch(e){this.toastMsg('审批失败：'+e.message);}
+    },
+    drillStatus(s){
+      this.orderFilterStatus=s; this.orderMetric=''; this.orderUseDashboardPeriod=true;
+      const found=this.statusFlow.find(x=>x.key===s);
+      this.orderListTitle=`${this.periodLabel} · ${found?found.label:s}`;
+      this.tab='orders'; this.loadOrders();
+    },
+    drillMetric(m){
+      this.orderFilterStatus=''; this.orderMetric=m; this.orderUseDashboardPeriod=true;
+      this.orderListTitle=`${this.periodLabel} · ${m==='profit'?'利润订单':'营收订单'}`;
+      this.tab='orders'; this.loadOrders();
+    },
+    drillPeriod(){
+      this.orderFilterStatus=''; this.orderMetric=''; this.orderUseDashboardPeriod=true;
+      this.orderListTitle=`${this.periodLabel}${this.dashboardBasis==='completed'?'完成付款':'新增'}订单`;
+      this.tab='orders'; this.loadOrders();
+    },
+    clearOrderFilter(){
+      this.orderFilterStatus=''; this.orderMetric=''; this.orderListTitle=''; this.orderUseDashboardPeriod=false;
+      this.tab='orders'; this.loadOrders();
+    },
+    resetOrderFilters(){
+      this.orderFilterStatus=''; this.orderMetric=''; this.orderListTitle=''; this.orderUseDashboardPeriod=false;
+      this.orderFilters={amount_min:'',amount_max:'',date_from:'',date_to:'',source:'',payment_status:''};
+      this.loadOrders();
+    },
+    openQuoteForm(o){
+      this.quoteOrder=o;
+      if(o.quote_items?.length){
+        this.qi=o.quote_items.map(i=>({item_name:i.item_name,quantity:i.quantity||1,unit:i.unit||'件',unit_price:i.unit_price||i.amount||0}));
+      }else{
+        let specs={}; try{specs=typeof o.material_specs==='string'?JSON.parse(o.material_specs||'{}'):(o.material_specs||{});}catch(e){}
+        const materials=specs.materials||[];
+        this.qi=materials.length?materials.map(m=>({item_name:m.name,quantity:m.quantity||1,unit:m.unit||'件',unit_price:0})):[
+          {item_name:o.main_stone||'主石',quantity:1,unit:'件',unit_price:0},
+          {item_name:o.metal_type||'金料',quantity:1,unit:'件',unit_price:0}
+        ];
+        this.qi.push({item_name:'工费',quantity:1,unit:'件',unit_price:0});
+      }
+    },
+    async submitQuote(){
+      const items=this.qi.filter(i=>i.item_name.trim()&&i.quantity>0&&i.unit_price>0).map(i=>({...i,amount:(Number(i.quantity)||0)*(Number(i.unit_price)||0)}));
+      if(!items.length){this.toastMsg('请填至少一项');return;}
+      const protectedStatus=['reviewed','sent_to_client','confirmed','in_production','delivered'].includes(this.quoteOrder.status);
+      try{await this.api(`/orders/${this.quoteOrder.id}/quote?username=${this.user.username}`,{method:'POST',body:JSON.stringify({items})});this.quoteOrder=null;this.toastMsg(protectedStatus?'已提交成本修改申请，等待老板审批':'✅ 成本已提交');await this.loadAll();}catch(e){this.toastMsg('失败');}
+    },
+
+    // Quote card
+    async showQuoteCard(o){
+      try{const r=await this.api(`/orders/${o.id}/quote-card`);this.quoteCardText=r.card_text;}catch(e){this.toastMsg('生成失败');}
+    },
+    async copyText(t){try{await navigator.clipboard.writeText(t);this.toastMsg('📋 已复制');}catch(e){this.toastMsg('复制失败，请手动选择');}},
+
+    // Users
+    async createUser(){
+      if(!this.nu.username||!this.nu.password){this.toastMsg('请填用户名和密码');return;}
+      const body={...this.nu};
+      const fields=this.nu.role==='custom'?this.nu.custom_fields_text.split(',').map(s=>s.trim()).filter(Boolean):[];
+      body.custom_fields=JSON.stringify({fields,permissions:this.nu.permissions});
+      try{await this.api('/users',{method:'POST',body:JSON.stringify(body)});this.showNewUser=false;this.toastMsg('✅ 用户已创建');this.loadUsers();}catch(e){this.toastMsg('失败：'+e.message);}
+    },
+    applyRoleTemplate(){
+      this.nu.permissions={...this.permissionTemplate(this.nu.role)};
+    },
+    openUserEditor(u){
+      this.editingUser=u;
+      let parsed={};
+      try{parsed=JSON.parse(u.custom_fields||'{}');}catch(e){}
+      this.nu={username:u.username,password:'',display_name:u.display_name,role:u.role,custom_fields_text:(parsed.fields||[]).join(','),permissions:{...this.permissionTemplate(u.role),...(u.permissions||{}),...(parsed.permissions||{})}};
+      this.showNewUser=true;
+    },
+    async saveUser(){
+      const fields=this.nu.role==='custom'?this.nu.custom_fields_text.split(',').map(s=>s.trim()).filter(Boolean):[];
+      const body={display_name:this.nu.display_name,role:this.nu.role,custom_fields:JSON.stringify({fields,permissions:this.nu.permissions})};
+      if(this.nu.password)body.password=this.nu.password;
+      try{await this.api(`/users/${this.editingUser.id}`,{method:'PUT',body:JSON.stringify(body)});this.showNewUser=false;this.editingUser=null;this.toastMsg('权限已保存');await this.loadUsers();}catch(e){this.toastMsg('保存失败：'+e.message);}
+    },
+    openNewUser(){
+      this.editingUser=null;
+      this.nu={username:'',password:'',display_name:'',role:'assistant',custom_fields_text:'',permissions:{...this.permissionTemplate('assistant')}};
+      this.showNewUser=true;
+    },
+    async deleteUser(u){if(!confirm('删除用户 '+u.display_name+'？'))return;try{await this.api(`/users/${u.id}`,{method:'DELETE'});this.toastMsg('已删除');this.loadUsers();}catch(e){}},
+
+    // Settings
+    async saveSetting(k,v){
+      try{
+        this.settings[k]=v;
+        await this.api('/settings',{method:'PUT',body:JSON.stringify({key:k,value:v})});
+        this.toastMsg('✅ 已保存');
+        if(k==='shop_name')this.shopName=v;
+      }catch(e){this.toastMsg('保存失败：'+e.message);}
+    },
+    async testAI(){
+      this.aiA='正在测试 AI...';
+      try{const r=await this.api('/ai/test?username='+this.user.username);this.aiA=r.answer+(r.note?`\n\n${r.note}`:'')+(r.model?`\n\n（模型：${r.model}）`:'');}
+      catch(e){this.aiA='测试失败：'+e.message;}
+    },
+    async testWeCom(){
+      try{await this.api('/wecom/test?username='+this.user.username,{method:'POST'});this.toastMsg('✅ 企业微信测试已发送');}
+      catch(e){this.toastMsg('企业微信测试失败：'+e.message);}
+    },
+
+    // Customer
+    async showCustomer(name){
+      if(!name)return;
+      try{this.custDetail=await this.api('/customers/'+encodeURIComponent(name)+'?username='+this.user.username);this.custEdit={...(this.custDetail.profile||{})};}
+      catch(e){this.toastMsg('客户资料打开失败');}
+    },
+    async saveCustomerProfile(){
+      try{this.custDetail.profile=await this.api('/customers/'+encodeURIComponent(this.custDetail.name)+'?username='+this.user.username,{method:'PUT',body:JSON.stringify(this.custEdit)});this.toastMsg('客户资料已保存');}
+      catch(e){this.toastMsg('保存失败：'+e.message);}
+    },
+    async saveAfterSale(o){
+      if(!this.afterSale.content.trim()){this.toastMsg('请填写售后内容');return;}
+      try{
+        const r=await this.api(`/orders/${o.id}/after-sales?username=${this.user.username}`,{method:'POST',body:JSON.stringify(this.afterSale)});
+        this.detailOrder.after_sales=r.after_sales; this.afterSale={service_type:'维修',content:''}; this.toastMsg('售后已记录');
+      }catch(e){this.toastMsg('保存失败：'+e.message);}
+    },
+
+    // AI
+    async askAI(){
+      if(!this.aiQ.trim())return;
+      try{
+        const r=await this.api('/ask',{method:'POST',body:JSON.stringify({question:this.aiQ,username:this.user.username})});
+        this.aiA=r.answer+(r.model?`\n\n（模型：${r.model}）`:'');
+      }catch(e){this.aiA='抱歉，出错了';}
+      this.aiQ='';
+    },
+    quickAsk(q){this.aiQ=q;this.askAI();},
+
+    toastMsg(m){this.toast=m;setTimeout(()=>this.toast='',2000);},
+  },
+  async mounted(){
+    // 检查 token
+    const saved=localStorage.getItem('jewelry_token');
+    if(saved){
+      try{
+        const r=await fetch('/api/auth/verify',{headers:{'Authorization':'Bearer '+saved,'Content-Type':'application/json'}});
+        if(r.ok){
+          this.token=saved;
+          const u=await r.json();
+          // 获取完整用户信息
+          const users=await this.api('/users');
+          this.user=users.find(x=>x.username===u.username)||u;
+          if(this.user.role==='master')this.tab='dashboard';
+          await this.loadAll();
+        }
+      }catch(e){localStorage.removeItem('jewelry_token');}
+    }
+  },
+  watch:{
+    token(v){if(v)localStorage.setItem('jewelry_token',v);else localStorage.removeItem('jewelry_token');},
+    tab(){if(this.tab==='orders')this.loadOrders();if(this.tab==='dashboard')this.loadStats();}
+  },
+}).mount('#app');
+</script></body></html>

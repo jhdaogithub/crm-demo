@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 520">
+  <defs><linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#1f7a5a"/><stop offset="1" stop-color="#b8e1cf"/></linearGradient></defs>
+  <rect width="720" height="520" fill="#f7f3ed"/>
+  <circle cx="360" cy="300" r="128" fill="none" stroke="#d8c291" stroke-width="34"/>
+  <circle cx="360" cy="300" r="92" fill="none" stroke="#fff9e8" stroke-width="10"/>
+  <polygon points="360,95 455,205 410,330 310,330 265,205" fill="url(#g)" stroke="#f8fbf7" stroke-width="10"/>
+  <path d="M310 330 L360 95 L410 330 M265 205 H455 M300 170 L420 170" stroke="#e8fff4" stroke-width="5" opacity=".8"/>
+  <text x="42" y="70" fill="#2c2416" font-family="Arial" font-size="30" font-weight="700">祖母绿戒指参考图</text>
+  <text x="42" y="112" fill="#8b7355" font-family="Arial" font-size="22">细戒臂 · 六爪 · 复古感</text>
+</svg>

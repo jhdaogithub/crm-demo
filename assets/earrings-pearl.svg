@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 520">
+  <rect width="720" height="520" fill="#f7f1ed"/>
+  <circle cx="285" cy="270" r="92" fill="#f8f5ed" stroke="#d0b176" stroke-width="12"/>
+  <circle cx="435" cy="270" r="92" fill="#f8f5ed" stroke="#d0b176" stroke-width="12"/>
+  <circle cx="250" cy="205" r="18" fill="#f7fbff" stroke="#d0b176" stroke-width="5"/>
+  <circle cx="320" cy="205" r="18" fill="#f7fbff" stroke="#d0b176" stroke-width="5"/>
+  <circle cx="400" cy="205" r="18" fill="#f7fbff" stroke="#d0b176" stroke-width="5"/>
+  <circle cx="470" cy="205" r="18" fill="#f7fbff" stroke="#d0b176" stroke-width="5"/>
+  <path d="M230 330 C270 370 320 370 355 330 M365 330 C400 370 450 370 490 330" stroke="#e6c99b" stroke-width="7" fill="none"/>
+  <text x="42" y="70" fill="#2c2416" font-family="Arial" font-size="30" font-weight="700">珍珠耳环方案</text>
+  <text x="42" y="112" fill="#8b7355" font-family="Arial" font-size="22">温柔日常 · 小钻点缀 · 玫瑰金</text>
+</svg>
