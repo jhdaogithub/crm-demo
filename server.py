@@ -69,7 +69,7 @@ ROLE_PERMISSIONS = {
     "boss": {"ai": True, "ai_config": True, "dashboard_finance": True, "dashboard_charts": True, "cost": True, "final_price": True, "customers": True, "customer_sensitive": True, "users": True, "settings": True, "orders_create": True, "orders_edit": True, "status": True, "quote": True, "payment": True, "price_edit": True, "after_sale": True, "notifications": True},
     "assistant": {"ai": True, "ai_config": False, "dashboard_finance": False, "dashboard_charts": False, "cost": False, "final_price": True, "customers": False, "customer_sensitive": False, "users": False, "settings": False, "orders_create": True, "orders_edit": True, "status": False, "quote": False, "payment": False, "price_edit": False, "after_sale": True, "notifications": True},
     "master": {"ai": False, "ai_config": False, "dashboard_finance": False, "dashboard_charts": False, "cost": False, "final_price": False, "customers": False, "customer_sensitive": False, "users": False, "settings": False, "orders_create": False, "orders_edit": False, "status": False, "quote": True, "payment": False, "price_edit": False, "after_sale": False, "notifications": True},
-    "demo_viewer": {"ai": True, "ai_config": False, "dashboard_finance": True, "dashboard_charts": True, "cost": True, "final_price": True, "customers": True, "customer_sensitive": False, "users": False, "settings": False, "orders_create": False, "orders_edit": False, "status": False, "quote": False, "payment": False, "price_edit": False, "after_sale": False, "notifications": False},
+    "demo_viewer": {"ai": True, "ai_config": False, "dashboard_finance": True, "dashboard_charts": True, "cost": True, "final_price": True, "customers": True, "customer_sensitive": True, "users": False, "settings": False, "orders_create": True, "orders_edit": True, "status": True, "quote": True, "payment": True, "price_edit": True, "after_sale": True, "notifications": True},
 }
 
 # ─── 数据库 ───
@@ -232,7 +232,7 @@ ROLE_DEFAULTS = {
     "boss": {"name":"老板","fields":["id","order_number","customer_name","product_type","metal_type","main_stone","side_stones","material_notes","special_notes","budget","ring_size","due_date","customer_source","occasion","design_brief","image_url","follow_up_note","material_specs","deposit_amount","paid_amount","paid_at","payment_note","paid_total","balance_amount","is_paid","payment_status","payment_records","cost_total","profit_mode","profit_rate","profit_fixed","profit","final_price","status","created_by","created_at","updated_at","quote_items","status_history","after_sales","quote_change_requests"]},
     "assistant": {"name":"助理","fields":["id","order_number","customer_name","product_type","metal_type","main_stone","side_stones","material_notes","special_notes","budget","ring_size","due_date","customer_source","occasion","design_brief","image_url","follow_up_note","material_specs","final_price","status","created_at","status_history"]},
     "master": {"name":"师傅","fields":["id","order_number","image_url","material_specs","status","created_at","quote_items","status_history","quote_change_requests"]},
-    "demo_viewer": {"name":"演示访客","fields":["id","order_number","customer_name","product_type","metal_type","main_stone","side_stones","material_notes","special_notes","due_date","customer_source","occasion","design_brief","image_url","follow_up_note","material_specs","status","created_at","updated_at","status_history"]},
+    "demo_viewer": {"name":"演示访客","fields":["id","order_number","customer_name","product_type","metal_type","main_stone","side_stones","material_notes","special_notes","budget","ring_size","due_date","customer_source","occasion","design_brief","image_url","follow_up_note","material_specs","deposit_amount","paid_amount","paid_at","payment_note","paid_total","balance_amount","is_paid","payment_status","payment_records","cost_total","profit_mode","profit_rate","profit_fixed","profit","final_price","status","created_by","created_at","updated_at","quote_items","status_history","after_sales","quote_change_requests"]},
 }
 
 # ─── 权限工具 ───
@@ -1033,7 +1033,7 @@ async def public_demo_guard(request: Request, call_next):
     allowed = (
         path == "/api/auth/verify" or path == "/api/status-flow" or path == "/api/stats"
         or path == "/api/orders" or re.fullmatch(r"/api/orders/\\d+", path)
-        or path == "/api/customers" or path.startswith("/api/customers/")
+        or path == "/api/customers" or path.startswith("/api/customers/") or path == "/api/notifications"
     )
     if method != "GET" or not allowed:
         return JSONResponse({"detail": "您没有此修改权限"}, status_code=403)

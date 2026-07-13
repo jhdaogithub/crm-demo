@@ -879,7 +879,7 @@ body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; backg
     </div>
     <div class="card" style="cursor:default;">
       <div style="font-weight:700;margin-bottom:8px;">客户资料</div>
-      <div v-if="user.role==='boss'" class="filter-grid">
+      <div v-if="user.role==='boss'||isDemoViewer" class="filter-grid">
         <div class="form-group"><label class="form-label">年龄</label><input class="form-input" v-model="custEdit.age" inputmode="numeric"></div>
         <div class="form-group"><label class="form-label">性别</label><select class="form-select" v-model="custEdit.gender"><option value="">未填写</option><option>女</option><option>男</option><option>其他</option></select></div>
         <div class="form-group"><label class="form-label">联系电话</label><input class="form-input" v-model="custEdit.phone" inputmode="tel"></div>
@@ -1034,7 +1034,7 @@ createApp({
         assistant:{...none,ai:true,final_price:true,orders_create:true,orders_edit:true,after_sale:true,notifications:true},
         master:{...none,quote:true,notifications:true},
         custom:{...none,ai:true,final_price:true,notifications:true},
-        demo_viewer:{...none,ai:true,dashboard_finance:true,dashboard_charts:true,cost:true,final_price:true,customers:true}
+        demo_viewer:{...none,ai:true,dashboard_finance:true,dashboard_charts:true,cost:true,final_price:true,customers:true,customer_sensitive:true,notifications:true,orders_create:true,orders_edit:true,status:true,quote:true,payment:true,price_edit:true,after_sale:true}
       };
       return templates[role]||templates.assistant;
     },
@@ -1232,6 +1232,7 @@ createApp({
       }catch(e){this.detailOrder=o;}
     },
     async createOrder(){
+      if(this.blockDemoWrite())return;
       if(!this.nf.customer_name){this.toastMsg('请填客户名');return;}
       this.applyMaterialToOrder();
       try{
@@ -1255,9 +1256,11 @@ createApp({
       reader.readAsDataURL(file);
     },
     async updateOrderStatus(o,s){
+      if(this.blockDemoWrite())return;
       try{await this.api(`/orders/${o.id}/status?username=${this.user.username}`,{method:'PUT',body:JSON.stringify({status:s})});this.detailOrder=null;this.toastMsg('✅ 状态已更新');await this.loadAll();}catch(e){this.toastMsg('失败');}
     },
     async saveOrderPrice(o){
+      if(this.blockDemoWrite())return;
       const body={profit_mode:o.profit_mode||'percent',profit_rate:Number(o.profit_rate)||0,profit_fixed:Number(o.profit_fixed)||0};
       try{
         await this.api(`/orders/${o.id}?username=${this.user.username}`,{method:'PUT',body:JSON.stringify(body)});
@@ -1268,6 +1271,7 @@ createApp({
       }catch(e){this.toastMsg('保存失败：'+e.message);}
     },
     async addPayment(o){
+      if(this.blockDemoWrite())return;
       if(!this.paymentForm.amount||this.paymentForm.amount<=0){this.toastMsg('请填写收款金额');return;}
       try{
         await this.api(`/orders/${o.id}/payments?username=${this.user.username}`,{method:'POST',body:JSON.stringify(this.paymentForm)});
@@ -1276,6 +1280,7 @@ createApp({
       }catch(e){this.toastMsg('保存失败：'+e.message);}
     },
     async deletePayment(o,p){
+      if(this.blockDemoWrite())return;
       if(!confirm('删除这笔收款记录？'))return;
       try{
         await this.api(`/orders/${o.id}/payments/${p.id}?username=${this.user.username}`,{method:'DELETE'});
@@ -1284,6 +1289,7 @@ createApp({
       }catch(e){this.toastMsg('删除失败：'+e.message);}
     },
     async reviewQuoteChange(r,action){
+      if(this.blockDemoWrite())return;
       try{
         await this.api(`/quote-change-requests/${r.id}/review?username=${this.user.username}`,{method:'POST',body:JSON.stringify({action})});
         this.toastMsg(action==='approve'?'已批准并退回待报价':'已拒绝申请');
@@ -1330,6 +1336,7 @@ createApp({
       }
     },
     async submitQuote(){
+      if(this.blockDemoWrite())return;
       const items=this.qi.filter(i=>i.item_name.trim()&&i.quantity>0&&i.unit_price>0).map(i=>({...i,amount:(Number(i.quantity)||0)*(Number(i.unit_price)||0)}));
       if(!items.length){this.toastMsg('请填至少一项');return;}
       const protectedStatus=['reviewed','sent_to_client','confirmed','in_production','delivered'].includes(this.quoteOrder.status);
@@ -1399,10 +1406,12 @@ createApp({
       catch(e){this.toastMsg('客户资料打开失败');}
     },
     async saveCustomerProfile(){
+      if(this.blockDemoWrite())return;
       try{this.custDetail.profile=await this.api('/customers/'+encodeURIComponent(this.custDetail.name)+'?username='+this.user.username,{method:'PUT',body:JSON.stringify(this.custEdit)});this.toastMsg('客户资料已保存');}
       catch(e){this.toastMsg('保存失败：'+e.message);}
     },
     async saveAfterSale(o){
+      if(this.blockDemoWrite())return;
       if(!this.afterSale.content.trim()){this.toastMsg('请填写售后内容');return;}
       try{
         const r=await this.api(`/orders/${o.id}/after-sales?username=${this.user.username}`,{method:'POST',body:JSON.stringify(this.afterSale)});
@@ -1411,6 +1420,7 @@ createApp({
     },
 
     // AI
+    blockDemoWrite(){if(this.isDemoViewer){this.toastMsg('您没有此修改权限');return true;}return false;},
     demoReadOnly(){if(this.isDemoViewer)this.toastMsg('演示账户没有输入权限');},
     async askAI(){
       if(this.isDemoViewer){this.demoReadOnly();return;}
