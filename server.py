@@ -6,7 +6,7 @@
 启动: python server.py  →  http://localhost:8899
 """
 
-import sqlite3, json, re, os, hashlib, secrets, csv
+import sqlite3, json, re, os, hashlib, secrets, csv, shutil
 from datetime import datetime, date, timedelta
 from contextlib import contextmanager, asynccontextmanager
 from io import StringIO
@@ -23,7 +23,17 @@ from pydantic import BaseModel
 import uvicorn
 
 # ─── 配置 ───
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "jewelry.db")
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+SEED_DB_PATH = os.path.join(APP_DIR, "jewelry.db")
+
+# Vercel 的部署目录不可作为可持续写入的数据盘。为演示环境把随代码
+# 发布的初始数据库复制到可写的临时空间；函数重启后会回到初始演示数据。
+if os.environ.get("VERCEL"):
+    DB_PATH = os.path.join("/tmp", "jewelry-crm-demo.db")
+    if not os.path.exists(DB_PATH):
+        shutil.copy2(SEED_DB_PATH, DB_PATH)
+else:
+    DB_PATH = SEED_DB_PATH
 DEMO_MODE = True  # demo 模式启动时有丰富数据
 
 # ─── AI 提供者配置 ───
